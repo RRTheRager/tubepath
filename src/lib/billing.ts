@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { env, isStripeConfigured, TRIAL_DAYS } from "./env";
+import { updateAccount } from "./store";
 import type { Account, SubscriptionStatus } from "./types";
 
 let stripeClient: Stripe | null = null;
@@ -37,7 +38,8 @@ export async function createCheckoutUrl(
     },
     client_reference_id: account.id,
     customer_email: account.email ?? undefined,
-    success_url: `${env.appUrl}/app?welcome=1`,
+    // Sync subscription on return — don't rely on the webhook alone (it can lag).
+    success_url: `${env.appUrl}/api/billing/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${env.appUrl}/?canceled=1`,
     metadata: { accountId: account.id },
   });
@@ -55,6 +57,29 @@ export async function createPortalUrl(
     return_url: `${env.appUrl}/app/settings`,
   });
   return portal.url;
+}
+
+/** Apply Stripe subscription fields to the TubePath account record. */
+export async function applyStripeSubscription(
+  accountId: string,
+  sub: Stripe.Subscription
+): Promise<void> {
+  const status = mapStripeStatus(sub.status);
+  const patch: Partial<Account> = {
+    status,
+    stripeSubscriptionId: sub.id,
+    stripeCustomerId:
+      typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+    cancelAtPeriodEnd: sub.cancel_at_period_end,
+    trialEnd: sub.trial_end
+      ? new Date(sub.trial_end * 1000).toISOString()
+      : null,
+    currentPeriodEnd: sub.current_period_end
+      ? new Date(sub.current_period_end * 1000).toISOString()
+      : null,
+  };
+  if (status !== "past_due") patch.graceEndsAt = null;
+  await updateAccount(accountId, patch);
 }
 
 /** Map a Stripe subscription status to our internal status. */
