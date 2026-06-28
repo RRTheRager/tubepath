@@ -1,0 +1,18 @@
+{
+  "name": "@tubepath/youtube",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tubepath/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@tubepath/config": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TubePath">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <path fill="#fff" d="M168 160c-8 0-14 6-14 14v164c0 8 6 14 14 14h24c8 0 14-6 14-14V174c0-8-6-14-14-14h-24zm88 0c-8 0-14 6-14 14v164c0 8 6 14 14 14h24c8 0 14-6 14-14V174c0-8-6-14-14-14h-24zm88 0c-8 0-14 6-14 14v164c0 8 6 14 14 14h24c8 0 14-6 14-14V174c0-8-6-14-14-14h-24z"/>
+  <path fill="#fff" fill-opacity="0.9" d="M128 352h256l-32 48H160l-32-48z"/>
+</svg>

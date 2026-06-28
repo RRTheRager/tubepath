@@ -1,0 +1,19 @@
+[package]
+name = "tubepath-desktop"
+version = "0.0.1"
+description = "TubePath desktop app"
+authors = ["TubePath"]
+edition = "2021"
+
+[lib]
+name = "tubepath_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -1,0 +1,24 @@
+{
+  "name": "@tubepath/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tubepath/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0",
+    "@tubepath/config": "workspace:*",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "@vitejs/plugin-react": "^4.3.4"
+  }
+}

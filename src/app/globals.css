@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light "Aqua" theme */
+    --background: 210 40% 97%;
+    --foreground: 222 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 12%;
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 214 28% 92%;
+    --muted-foreground: 220 12% 42%;
+    --accent: 211 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --border: 220 16% 86%;
+    --ring: 211 100% 50%;
+    --success: 142 70% 42%;
+    --warning: 38 92% 50%;
+    --danger: 0 84% 60%;
+    --sidebar: 210 40% 96%;
+    --radius: 0.85rem;
+  }
+
+  .dark {
+    /* Dark "Graphite" theme */
+    --background: 224 18% 8%;
+    --foreground: 210 20% 96%;
+    --card: 225 16% 12%;
+    --card-foreground: 210 20% 96%;
+    --popover: 225 16% 13%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 211 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 222 14% 20%;
+    --muted-foreground: 218 12% 65%;
+    --accent: 211 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --border: 222 14% 22%;
+    --ring: 211 100% 60%;
+    --success: 142 70% 48%;
+    --warning: 38 92% 55%;
+    --danger: 0 84% 64%;
+    --sidebar: 225 16% 10%;
+    --radius: 0.85rem;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+@layer components {
+  /* macOS vibrancy material */
+  .vibrancy {
+    background: hsl(var(--sidebar) / 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  .vibrancy-strong {
+    background: hsl(var(--card) / 0.78);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+  }
+
+  .mac-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 2px hsl(220 40% 2% / 0.05),
+      0 8px 24px hsl(220 40% 2% / 0.06);
+  }
+
+  .hairline {
+    border-color: hsl(var(--border) / 0.7);
+  }
+
+  /* subtle grain overlay for premium texture */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* macOS-style thin scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

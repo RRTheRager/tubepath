@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TubePath",
+  "version": "0.0.1",
+  "identifier": "app.tubepath.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @tubepath/web dev",
+    "devUrl": "http://localhost:3000/app/pulse",
+    "beforeBuildCommand": "pnpm --filter @tubepath/web build",
+    "frontendDist": "../web/out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "TubePath",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "decorations": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  },
+  "plugins": {}
+}
