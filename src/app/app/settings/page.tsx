@@ -41,6 +41,7 @@ interface AiHealth {
   ok: boolean;
   key?: { format?: string; last4?: string };
   reason?: string;
+  error?: string;
   models?: AiModelResult[];
 }
 
@@ -251,6 +252,8 @@ export default function SettingsPage() {
                   </p>
                 ) : ai?.reason ? (
                   <p>{ai.reason}</p>
+                ) : ai?.error ? (
+                  <p>{ai.error}</p>
                 ) : quota ? (
                   <p>
                     Quota reached on all configured models &mdash; using canned

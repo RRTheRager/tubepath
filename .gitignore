@@ -34,3 +34,7 @@ next-env.d.ts.bak
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# Legacy monorepo (not deployed — causes Vercel to pick the wrong app)
+apps/
+packages/

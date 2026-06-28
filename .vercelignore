@@ -1,0 +1,3 @@
+# Old monorepo — not part of the production app
+apps/
+packages/
