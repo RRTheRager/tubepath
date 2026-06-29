@@ -36,6 +36,7 @@ export const metadata: Metadata = {
     siteName: "TubePath",
     title: "TubePath",
     description: "YouTube analytics and AI coach for creators.",
+    images: [{ url: "/logo-full.svg", width: 220, height: 56, alt: "TubePath" }],
   },
 };
 

@@ -4,6 +4,7 @@ import { Youtube, BarChart3, Sparkles, Shield } from "lucide-react";
 import { useSession } from "@/components/providers/SessionProvider";
 import { Loading } from "@/components/ui/Loading";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/brand/Logo";
 
 /**
  * Full-screen first-run prompt: after subscribing, connect Google before using the app.
@@ -50,8 +51,8 @@ export function GoogleConnectGate({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="mac-card w-full max-w-lg text-center shadow-mac-lg">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FF0000]/15 text-[#FF0000]">
-          <Youtube className="h-8 w-8" />
+        <div className="mx-auto mb-5 flex justify-center">
+          <Logo variant="full" className="h-10 w-auto" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight">
           Connect YouTube to get started

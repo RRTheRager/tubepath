@@ -4,8 +4,8 @@
   "description": "YouTube analytics and AI coach",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#10131a",
-  "theme_color": "#10131a",
+  "background_color": "#ffffff",
+  "theme_color": "#004A8D",
   "orientation": "portrait-primary",
   "icons": [
     {
