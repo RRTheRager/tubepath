@@ -4,7 +4,6 @@ import {
   BarChart3,
   Bot,
   Check,
-  Flame,
   Sparkles,
   Wand2,
 } from "lucide-react";
@@ -12,6 +11,7 @@ import { getCurrentAccount } from "@/lib/session";
 import { capabilitiesFor } from "@/lib/access";
 import { PREMIUM_PRICE_LABEL } from "@/lib/env";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { Logo } from "@/components/brand/Logo";
 import { TrafficLights } from "@/components/macos/TrafficLights";
 
 export default async function LandingPage() {
@@ -27,12 +27,7 @@ export default async function LandingPage() {
       </div>
 
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-white">
-            <Flame className="h-4 w-4" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight">TubePath</span>
-        </div>
+        <Logo variant="full" href="/" priority className="h-10 w-auto" />
         {hasAccess ? (
           <Link
             href="/app"
@@ -91,9 +86,8 @@ export default async function LandingPage() {
             <div className="mac-card overflow-hidden p-0 shadow-mac-lg">
               <div className="flex h-10 items-center gap-3 border-b border-border bg-card/80 px-4">
                 <TrafficLights />
-                <span className="text-xs text-muted-foreground">
-                  TubePath &mdash; Insights
-                </span>
+                <Logo variant="icon" className="h-5 w-5" />
+                <span className="text-xs text-muted-foreground">Insights</span>
               </div>
               <div className="grid gap-4 p-6 md:grid-cols-3">
                 {[

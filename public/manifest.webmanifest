@@ -4,14 +4,14 @@
   "description": "YouTube analytics and AI coach",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#10131a",
-  "theme_color": "#10131a",
+  "background_color": "#ffffff",
+  "theme_color": "#004A8D",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

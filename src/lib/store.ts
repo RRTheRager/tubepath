@@ -6,7 +6,7 @@ import type {
   SubscriptionStatus,
   YouTubeChannelLink,
 } from "./types";
-import { GRACE_DAYS, TRIAL_DAYS } from "./env";
+import { GRACE_DAYS, TRIAL_DAYS, isStripeConfigured } from "./env";
 import { getStorage } from "./storage";
 import {
   applyGoogleSelection,
@@ -45,7 +45,7 @@ function newAccount(id: string): Account {
     graceEndsAt: null,
     cancelAtPeriodEnd: false,
     youtubeConnected: false,
-    streak: 4,
+    streak: 0,
     youtubeChannelId: null,
     youtubeChannels: [],
     activeGoogleAccountId: null,
@@ -62,10 +62,15 @@ function reconcile(account: Account): boolean {
       if (account.cancelAtPeriodEnd) {
         account.status = "canceled";
         account.trialEnd = null;
-      } else {
+      } else if (account.stripeSubscriptionId || account.stripeCustomerId) {
+        // Stripe-backed — webhook / checkout-success is the source of truth.
+      } else if (!isStripeConfigured()) {
         account.status = "active";
         account.trialEnd = null;
         account.currentPeriodEnd = daysFromNow(30);
+      } else {
+        account.status = "canceled";
+        account.trialEnd = null;
       }
     }
   }

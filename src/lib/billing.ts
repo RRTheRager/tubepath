@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { env, isStripeConfigured, TRIAL_DAYS } from "./env";
+import { env, GRACE_DAYS, isStripeConfigured, TRIAL_DAYS } from "./env";
 import { updateAccount } from "./store";
 import type { Account, SubscriptionStatus } from "./types";
 
@@ -78,7 +78,13 @@ export async function applyStripeSubscription(
       ? new Date(sub.current_period_end * 1000).toISOString()
       : null,
   };
-  if (status !== "past_due") patch.graceEndsAt = null;
+  if (status === "past_due") {
+    patch.graceEndsAt = new Date(
+      Date.now() + GRACE_DAYS * 86_400_000
+    ).toISOString();
+  } else {
+    patch.graceEndsAt = null;
+  }
   await updateAccount(accountId, patch);
 }
 

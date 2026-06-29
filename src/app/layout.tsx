@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     title: "TubePath",
   },
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/logo-icon.png", type: "image/png" }],
+    apple: [{ url: "/logo-icon.png", type: "image/png" }],
   },
   openGraph: {
     type: "website",
@@ -36,6 +36,7 @@ export const metadata: Metadata = {
     siteName: "TubePath",
     title: "TubePath",
     description: "YouTube analytics and AI coach for creators.",
+    images: [{ url: "/logo-full.png", width: 1024, height: 1024, alt: "TubePath" }],
   },
 };
 

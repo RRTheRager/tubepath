@@ -19,7 +19,7 @@ create table if not exists public.accounts (
   grace_ends_at           timestamptz,
   cancel_at_period_end    boolean not null default false,
   youtube_connected       boolean not null default false,
-  streak                  integer not null default 4,
+  streak                  integer not null default 0,
   stripe_customer_id      text,
   stripe_subscription_id  text,
   youtube_channel_id        text,
