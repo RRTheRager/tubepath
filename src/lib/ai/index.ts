@@ -12,6 +12,7 @@ import {
   fallbackSuggestions,
   AI_SUPPORT_MESSAGE,
 } from "./fallback";
+import { AI_REALISM_RULES } from "./tone";
 
 export interface AiChannelContext {
   channelTitle: string;
@@ -54,7 +55,7 @@ export async function generateSuggestions(
     // Cache for 1h so re-opening the studio for the same topic is free.
     return await cached(`suggest:${topic}`, 3_600_000, async () => {
       const system =
-        "You are a world-class YouTube strategist. Return JSON with keys: titles (array of {text,rationale,ctrScore 0-100}), description ({hook,body,cta,hashtags[]}), tags (array of {tag,relevance 0-100,competition low|medium|high}), hook ({script,retentionTactics[]}), tips (array of {id,title,body,priority high|medium|low,category engagement|discovery|retention|consistency}).";
+        "You are a practical YouTube strategist. Be specific and realistic — no hype or guaranteed outcomes. Return JSON with keys: titles (array of {text,rationale,ctrScore 0-100}), description ({hook,body,cta,hashtags[]}), tags (array of {tag,relevance 0-100,competition low|medium|high}), hook ({script,retentionTactics[]}), tips (array of {id,title,body,priority high|medium|low,category engagement|discovery|retention|consistency}).";
       const bundle = await geminiJson<Omit<SuggestionBundle, "ai">>(
         system,
         `Video topic: ${topic || "a new video for a growing channel"}`
@@ -81,11 +82,17 @@ export async function generateInsights(
       `insights:${richPrompt ?? JSON.stringify(ctx)}`,
       600_000,
       async () => {
-        const system = `You are a YouTube analytics coach. Rules: cite specific numbers, no generic advice, compare periods when possible.${thinData ? " Data is LIMITED — warn the user." : ""} Return JSON {"cards":[{"id","tone":"positive|neutral|negative|tip","emoji","headline","detail","deltaLabel?"}]}. Max 4 cards.`;
+        const system = `You are a YouTube analytics coach.
+Rules: cite specific numbers, no generic advice, compare periods when possible.
+Use negative or neutral tone when metrics declined — do not spin bad news as good.
+${thinData ? " Data is LIMITED — warn the user." : ""}
+${AI_REALISM_RULES}
+Return JSON {"cards":[{"id","tone":"positive|neutral|negative|tip","emoji","headline","detail","deltaLabel?"}]}. Max 4 cards.`;
         const payload = richPrompt ?? JSON.stringify(ctx);
         const result = await geminiJson<{ cards: Omit<InsightCard, "ai">[] }>(
           system,
-          payload
+          payload,
+          { temperature: 0.35 }
         );
         return (result.cards ?? []).map((c) => ({ ...c, ai: true }));
       }
@@ -243,16 +250,19 @@ export async function chat(
     return { content: fallbackChat() };
   }
   try {
-    const system = `You are TubePath's analytics coach for "${ctx.channelTitle}". Rules:
+    const system = `You are TubePath's analytics coach for "${ctx.channelTitle}".
+
+Rules:
 - NEVER give generic YouTube advice without citing the user's data.
 - Use ONLY facts from the DATA block below.
 - Compare metrics to prior periods when relevant.
 - Label competitor information as public data.
 ${thinData ? "- WARN: analytics history is limited; state uncertainty clearly." : ""}
+${AI_REALISM_RULES}
 
 DATA:
 ${richPrompt ?? JSON.stringify(ctx)}`;
-    const content = await geminiText(system, message);
+    const content = await geminiText(system, message, { temperature: 0.4 });
     return { content };
   } catch {
     return { content: fallbackChat() };

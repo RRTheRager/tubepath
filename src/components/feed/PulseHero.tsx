@@ -30,7 +30,7 @@ export function PulseHero({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="mac-card relative overflow-hidden"
+      className="mac-card relative overflow-hidden p-5 sm:p-6"
     >
       <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
       <div className="flex items-center gap-4">
@@ -52,7 +52,7 @@ export function PulseHero({
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4">
+      <div className="mt-5 grid grid-cols-3 gap-4 border-t border-border pt-5">
         <PulseStat label="Views today" value={pulse.viewsDelta} />
         <PulseStat label="Engagement" value={pulse.engagementDelta} />
         <div>

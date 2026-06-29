@@ -123,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.id}
                 href={item.href}
                 className={cn(
-                  "tap-target flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors",
+                  "tap-target flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-colors",
                   active
                     ? "bg-primary/12 text-primary"
                     : "text-muted-foreground active:bg-muted/50"

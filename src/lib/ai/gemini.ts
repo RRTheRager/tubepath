@@ -107,7 +107,8 @@ export async function geminiText(
 
 export async function geminiJson<T>(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  opts?: { temperature?: number }
 ): Promise<T> {
   const text = await callGemini({
     contents: [
@@ -120,7 +121,7 @@ export async function geminiJson<T>(
       },
     ],
     generationConfig: {
-      temperature: 0.7,
+      temperature: opts?.temperature ?? 0.7,
       responseMimeType: "application/json",
     },
   });

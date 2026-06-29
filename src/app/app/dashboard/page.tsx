@@ -6,26 +6,21 @@ import type { DailyMetric, MetricKey, OverviewPayload } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { DataNotice } from "@/components/ui/DataNotice";
 import { MetricChart, type ChartPoint } from "@/components/charts/MetricChart";
 import { UpgradeTeaser } from "@/components/access/UpgradeTeaser";
 import { Loading } from "@/components/ui/Loading";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { AnomalyList } from "@/components/dashboard/AnomalyList";
 import { StudioAnalyticsPanel } from "@/components/analytics/StudioAnalyticsPanel";
+import { StudioTabBar, type StudioTab } from "@/components/analytics/StudioTabBar";
 import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
 import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
 import { formatCompact } from "@/lib/utils";
 
 type Range = "7" | "28" | "90";
-type StudioTab = "overview" | "reach" | "engagement" | "audience" | "revenue";
 
-const STUDIO_TABS: { value: StudioTab; label: string }[] = [
-  { value: "overview", label: "Overview" },
-  { value: "reach", label: "Reach" },
-  { value: "engagement", label: "Engagement" },
-  { value: "audience", label: "Audience" },
-  { value: "revenue", label: "Revenue" },
-];
+const CHART_COLOR = "hsl(0 100% 50%)";
 
 function toChart(metrics: DailyMetric[], key: MetricKey, days: number): ChartPoint[] {
   const slice = metrics.slice(-days);
@@ -110,36 +105,25 @@ export default function DashboardPage() {
         }
       />
 
-      {studio && (
-        <div className="space-y-4">
-          <div className="overflow-x-auto pb-1">
-            <div className="flex min-w-max gap-1 rounded-xl border border-border bg-card/60 p-1">
-              {STUDIO_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setStudioTab(tab.value)}
-                  className={`tap-target rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    studioTab === tab.value
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      {studio ? (
+        <div className="space-y-5">
+          <StudioTabBar value={studioTab} onChange={setStudioTab} />
           <StudioAnalyticsPanel studio={studio} tab={studioTab} />
         </div>
+      ) : (
+        <DataNotice
+          title="Studio metrics unavailable"
+          description="We couldn't load detailed analytics from YouTube for this period. Your charts below may still show daily trends — try refreshing or reconnecting your channel in Settings."
+        />
       )}
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <Card>
+        <Card className="p-6">
           <CardHeader title="Views over time" subtitle={`Last ${days} days`} />
           <MetricChart
             data={toChart(overview.metrics, "views", days)}
             formatValue={(v) => v.toLocaleString()}
+            color={CHART_COLOR}
           />
         </Card>
       </motion.div>
@@ -150,11 +134,11 @@ export default function DashboardPage() {
           title="Engagement trends"
           description="Unlock engagement, CTR, and watch-time charts with Premium."
         >
-          <Card>
+          <Card className="p-6">
             <CardHeader title="Engagement rate" subtitle={`Last ${days} days`} />
             <MetricChart
               data={toChart(overview.metrics, "engagement", days)}
-              color="hsl(142 70% 45%)"
+              color={CHART_COLOR}
               formatValue={(v) => `${v.toFixed(2)}%`}
             />
           </Card>
@@ -165,11 +149,11 @@ export default function DashboardPage() {
           title="Watch time trends"
           description="Unlock watch-time charts with Premium."
         >
-          <Card>
+          <Card className="p-6">
             <CardHeader title="Watch time (hrs)" subtitle={`Last ${days} days`} />
             <MetricChart
               data={toChart(overview.metrics, "watchTime", days)}
-              color="hsl(280 70% 60%)"
+              color={CHART_COLOR}
               formatValue={(v) => `${formatCompact(v)} h`}
             />
           </Card>

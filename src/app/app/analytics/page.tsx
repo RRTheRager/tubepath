@@ -12,20 +12,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Loading } from "@/components/ui/Loading";
 import { Delta } from "@/components/ui/Delta";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { DataNotice } from "@/components/ui/DataNotice";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { StudioAnalyticsPanel } from "@/components/analytics/StudioAnalyticsPanel";
+import { StudioTabBar, type StudioTab } from "@/components/analytics/StudioTabBar";
 import { formatCompact } from "@/lib/utils";
 
 type Range = "7" | "28" | "90";
-type StudioTab = "overview" | "reach" | "engagement" | "audience" | "revenue";
-
-const STUDIO_TABS: { value: StudioTab; label: string }[] = [
-  { value: "overview", label: "Overview" },
-  { value: "reach", label: "Reach" },
-  { value: "engagement", label: "Engagement" },
-  { value: "audience", label: "Audience" },
-  { value: "revenue", label: "Revenue" },
-];
 
 interface AnalyticsFact {
   label: string;
@@ -146,28 +139,16 @@ export default function AnalyticsPage() {
         }
       />
 
-      {studio && (
-        <section className="space-y-4">
-          <div className="overflow-x-auto pb-1">
-            <div className="flex min-w-max gap-1 rounded-xl border border-border bg-card/60 p-1">
-              {STUDIO_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setStudioTab(tab.value)}
-                  className={`tap-target rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    studioTab === tab.value
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      {studio ? (
+        <section className="space-y-5">
+          <StudioTabBar value={studioTab} onChange={setStudioTab} />
           <StudioAnalyticsPanel studio={studio} tab={studioTab} />
         </section>
+      ) : (
+        <DataNotice
+          title="Studio metrics unavailable"
+          description="YouTube didn't return detailed analytics for this period. Try a longer date range or reconnect your channel in Settings."
+        />
       )}
 
       {!hasAi ? (
@@ -182,7 +163,10 @@ export default function AnalyticsPage() {
           ]}
         />
       ) : data?.error && !data.brief ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">{data.error}</div>
+        <DataNotice
+          title="AI analysis unavailable"
+          description={data.error}
+        />
       ) : (
         <section className="space-y-6">
           <div>
@@ -190,34 +174,41 @@ export default function AnalyticsPage() {
               <LineChart className="h-5 w-5 text-primary" /> AI analysis
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Topic focus: {ctx?.topic || "—"}
+              Topic focus: {ctx?.topic || "Not enough uploads to detect a topic yet"}
             </p>
             {ctx?.thinData && (
-              <p className="mt-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <p className="mt-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm leading-relaxed text-warning">
                 Limited analytics history ({ctx.dataDays} days) — insights may not
                 be fully accurate yet.
               </p>
             )}
           </div>
 
-          {ctx?.facts && (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {ctx?.facts?.length ? (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {ctx.facts.map((f) => (
-                <Card key={f.label} className="p-4">
-                  <p className="text-xs text-muted-foreground">{f.label}</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums">{f.value}</p>
+                <Card key={f.label} className="p-5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {f.label}
+                  </p>
+                  <p className="mt-2 text-xl font-medium tabular-nums">{f.value}</p>
                   {f.delta && (
-                    <div className="mt-1">
+                    <div className="mt-2">
                       <Delta value={parseFloat(f.delta)} />
                     </div>
                   )}
                 </Card>
               ))}
             </div>
+          ) : (
+            <DataNotice
+              title="Not enough data for key facts"
+              description="We need more views and history before the AI can summarize period-over-period changes with confidence."
+            />
           )}
 
-          {brief && (
-            <Card>
+          {brief ? (
+            <Card className="p-6">
               <CardHeader
                 title="Analysis"
                 action={
@@ -226,46 +217,56 @@ export default function AnalyticsPage() {
                   </Badge>
                 }
               />
-              <h3 className="text-lg font-semibold">{brief.headline}</h3>
+              <h3 className="text-lg font-semibold leading-snug">{brief.headline}</h3>
               {brief.paragraphs.map((p) => (
-                <p key={p.slice(0, 40)} className="mt-2 text-sm text-muted-foreground">
+                <p key={p.slice(0, 40)} className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   {p}
                 </p>
               ))}
               {brief.thinDataWarning && (
-                <p className="mt-3 text-xs text-warning">{brief.thinDataWarning}</p>
+                <p className="mt-4 text-sm text-warning">{brief.thinDataWarning}</p>
               )}
             </Card>
+          ) : (
+            <DataNotice
+              title="Analysis not ready"
+              description="There isn't enough channel data yet to produce a written analysis. Check back after more uploads and views."
+            />
           )}
 
-          {brief?.comparisons && brief.comparisons.length > 0 && (
-            <Card>
+          {brief?.comparisons?.length ? (
+            <Card className="p-6">
               <CardHeader title="Comparisons" />
               <div className="space-y-3">
                 {brief.comparisons.map((c) => (
                   <div
                     key={c.label}
-                    className="rounded-lg border border-border p-3"
+                    className="rounded-lg border border-border px-4 py-3"
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-medium">{c.label}</p>
                       {c.source === "public" && (
-                        <span className="text-[10px] text-muted-foreground">
-                          Public data
-                        </span>
+                        <span className="text-xs text-muted-foreground">Public data</span>
                       )}
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{c.detail}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {c.detail}
+                    </p>
                   </div>
                 ))}
               </div>
             </Card>
-          )}
+          ) : hasAi && brief ? (
+            <DataNotice
+              title="No comparisons available"
+              description="There isn't enough overlapping data to compare against competitors or prior periods yet."
+            />
+          ) : null}
 
-          {brief?.citations && brief.citations.length > 0 && (
-            <Card>
+          {brief?.citations?.length ? (
+            <Card className="p-6">
               <CardHeader title="Cited metrics" />
-              <ul className="space-y-1 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
                 {brief.citations.map((c) => (
                   <li key={c} className="flex items-start gap-2">
                     <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
@@ -274,33 +275,45 @@ export default function AnalyticsPage() {
                 ))}
               </ul>
             </Card>
-          )}
+          ) : null}
 
-          {ctx?.competitors && ctx.competitors.length > 0 && (
-            <Card>
+          {ctx?.competitors?.length ? (
+            <Card className="p-6">
               <CardHeader title="Competitor benchmarks" />
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {ctx.competitors.map((c) => (
                   <div
                     key={c.channelTitle}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
+                    className="rounded-lg border border-border px-4 py-3 text-sm"
                   >
                     <p className="font-medium">{c.channelTitle}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {formatCompact(c.subscriberCount)} subs · Public data
                     </p>
                   </div>
                 ))}
               </div>
             </Card>
-          )}
+          ) : hasAi ? (
+            <DataNotice
+              title="No competitor benchmarks"
+              description="We couldn't find enough similar channels in public data to benchmark against your niche yet."
+            />
+          ) : null}
 
-          {ctx?.dominantPattern && (
-            <Card className="p-4">
-              <p className="text-xs text-muted-foreground">Top video traffic pattern</p>
-              <p className="mt-1 font-semibold">{ctx.dominantPattern}</p>
+          {ctx?.dominantPattern ? (
+            <Card className="p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Top video traffic pattern
+              </p>
+              <p className="mt-2 font-semibold">{ctx.dominantPattern}</p>
             </Card>
-          )}
+          ) : hasAi ? (
+            <DataNotice
+              title="Traffic pattern unknown"
+              description="Upload more videos with measurable views before we can identify a dominant traffic source."
+            />
+          ) : null}
         </section>
       )}
     </div>

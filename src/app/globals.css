@@ -4,47 +4,47 @@
 
 @layer base {
   :root {
-    --background: 210 40% 97%;
-    --foreground: 222 30% 12%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 222 30% 12%;
+    --card-foreground: 0 0% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 30% 12%;
-    --primary: 211 100% 50%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --muted: 214 28% 92%;
-    --muted-foreground: 220 12% 42%;
-    --accent: 211 100% 50%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 100% 50%;
     --accent-foreground: 0 0% 100%;
-    --border: 220 16% 86%;
-    --ring: 211 100% 50%;
+    --border: 0 0% 90%;
+    --ring: 0 100% 50%;
     --success: 142 70% 42%;
     --warning: 38 92% 50%;
     --danger: 0 84% 60%;
-    --sidebar: 210 40% 96%;
-    --radius: 0.85rem;
+    --sidebar: 0 0% 97%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 224 18% 8%;
-    --foreground: 210 20% 96%;
-    --card: 225 16% 12%;
-    --card-foreground: 210 20% 96%;
-    --popover: 225 16% 13%;
-    --popover-foreground: 210 20% 96%;
-    --primary: 211 100% 60%;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --muted: 222 14% 20%;
-    --muted-foreground: 218 12% 65%;
-    --accent: 211 100% 60%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 67%;
+    --accent: 0 100% 50%;
     --accent-foreground: 0 0% 100%;
-    --border: 222 14% 22%;
-    --ring: 211 100% 60%;
+    --border: 0 0% 24%;
+    --ring: 0 100% 50%;
     --success: 142 70% 48%;
     --warning: 38 92% 55%;
     --danger: 0 84% 64%;
-    --sidebar: 225 16% 10%;
-    --radius: 0.85rem;
+    --sidebar: 0 0% 9%;
+    --radius: 0.75rem;
   }
 
   * {
@@ -83,14 +83,11 @@
 
   .mac-card {
     background: hsl(var(--card));
-    border: 1px solid hsl(var(--border) / 0.85);
+    border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
-    box-shadow:
-      0 1px 2px hsl(220 40% 2% / 0.04),
-      0 8px 24px hsl(220 40% 2% / 0.06);
+    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.04);
     transition:
-      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.2s ease,
       border-color 0.2s ease;
   }
 
@@ -105,9 +102,8 @@
 
   .surface-stat {
     background: hsl(var(--card));
-    border: 1px solid hsl(var(--border) / 0.85);
+    border: 1px solid hsl(var(--border));
     border-radius: calc(var(--radius) - 2px);
-    box-shadow: 0 1px 2px hsl(220 40% 2% / 0.04);
   }
 
   .tap-target {

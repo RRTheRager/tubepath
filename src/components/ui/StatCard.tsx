@@ -23,7 +23,7 @@ export function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="mac-card relative overflow-hidden p-4">
+    <div className="mac-card relative overflow-hidden p-5 sm:p-6">
       {accent && (
         <span
           className="absolute left-0 top-0 h-full w-1"

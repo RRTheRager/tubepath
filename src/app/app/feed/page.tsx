@@ -10,6 +10,7 @@ import { PulseHero } from "@/components/feed/PulseHero";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { Loading } from "@/components/ui/Loading";
 import { Button } from "@/components/ui/Button";
+import { DataNotice } from "@/components/ui/DataNotice";
 import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
 import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
 import { AI_SUPPORT_MESSAGE } from "@/lib/ai/constants";
@@ -113,9 +114,18 @@ export default function FeedPage() {
         refreshing={refreshing}
       />
 
-      {cards.map((card, i) => (
-        <FeedCard key={card.id} card={card} index={i} />
-      ))}
+      {cards.length > 0 ? (
+        cards.map((card, i) => <FeedCard key={card.id} card={card} index={i} />)
+      ) : (
+        <DataNotice
+          title="No insights yet"
+          description={
+            isFull
+              ? "There isn't enough recent activity for the AI to summarize. Check back after your next uploads pick up views."
+              : "Connect your channel and upload a few videos — daily insights will show up here once there's data to work with."
+          }
+        />
+      )}
 
       {!isFull && <UnlockAiCard />}
     </div>

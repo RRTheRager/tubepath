@@ -17,7 +17,7 @@ export interface ChartPoint {
 
 export function MetricChart({
   data,
-  color = "hsl(211 100% 55%)",
+  color = "hsl(0 100% 50%)",
   height = 200,
   formatValue = (v) => v.toLocaleString(),
 }: {
