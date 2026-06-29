@@ -12,11 +12,16 @@ export async function GET() {
     return NextResponse.json({ error: "Premium required" }, { status: 403 });
   }
 
-  const { ctx, youtubeConnected } = await buildAiContext(account);
+  const { ctx, youtubeConnected, richPrompt, thinData } =
+    await buildAiContext(account);
   if (!youtubeConnected) {
     return NextResponse.json({ insights: [], error: AI_SUPPORT_MESSAGE });
   }
 
-  const { insights, error } = await generateInsights(ctx);
+  const { insights, error } = await generateInsights(
+    ctx,
+    richPrompt,
+    thinData
+  );
   return NextResponse.json({ insights, error });
 }

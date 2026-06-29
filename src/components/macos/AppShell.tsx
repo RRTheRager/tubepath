@@ -11,7 +11,9 @@ import { GoogleConnectGate } from "@/components/youtube/GoogleConnectGate";
 import { NAV } from "./nav";
 import { cn } from "@/lib/utils";
 
-const MOBILE_TABS = NAV.filter((n) => n.id !== "settings");
+const MOBILE_TABS = NAV.filter((n) =>
+  ["feed", "dashboard", "analytics", "videos"].includes(n.id)
+);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -112,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
 
-        <nav className="vibrancy fixed bottom-0 left-0 right-0 z-30 flex border-t border-border/60 pb-[env(safe-area-inset-bottom)] md:hidden">
+        <nav className="vibrancy fixed bottom-0 left-0 right-0 z-30 flex gap-0.5 border-t border-border/60 px-1 pb-[env(safe-area-inset-bottom)] pt-1 md:hidden">
           {MOBILE_TABS.map((item) => {
             const active =
               pathname === item.href || pathname.startsWith(item.href + "/");
@@ -121,11 +123,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.id}
                 href={item.href}
                 className={cn(
-                  "flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-medium",
-                  active ? "text-primary" : "text-muted-foreground"
+                  "tap-target flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors",
+                  active
+                    ? "bg-primary/12 text-primary"
+                    : "text-muted-foreground active:bg-muted/50"
                 )}
               >
-                <item.icon className="h-5 w-5 shrink-0" strokeWidth={2.1} />
+                <item.icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.4 : 2.1} />
                 <span className="truncate">{item.label}</span>
               </Link>
             );

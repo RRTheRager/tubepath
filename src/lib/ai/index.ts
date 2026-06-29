@@ -69,23 +69,33 @@ export async function generateSuggestions(
 // ---- Insights -------------------------------------------------------------
 
 export async function generateInsights(
-  ctx: AiChannelContext
+  ctx: AiChannelContext,
+  richPrompt?: string,
+  thinData?: boolean
 ): Promise<{ insights: InsightCard[]; error?: string }> {
   if (!isAiConfigured()) {
     return { insights: fallbackInsights(), error: AI_SUPPORT_MESSAGE };
   }
   try {
-    // Cache for 10m so refreshing/revisiting the feed doesn't re-call Gemini.
-    const insights = await cached(`insights:${JSON.stringify(ctx)}`, 600_000, async () => {
-      const system =
-        'You are a YouTube analytics coach. Return JSON {"cards":[{"id","tone":"positive|neutral|negative|tip","emoji","headline","detail","deltaLabel?"}]}. Keep headlines punchy and addictive. Max 4 cards.';
-      const result = await geminiJson<{ cards: Omit<InsightCard, "ai">[] }>(
-        system,
-        JSON.stringify(ctx)
-      );
-      return (result.cards ?? []).map((c) => ({ ...c, ai: true }));
-    });
-    return { insights };
+    const insights = await cached(
+      `insights:${richPrompt ?? JSON.stringify(ctx)}`,
+      600_000,
+      async () => {
+        const system = `You are a YouTube analytics coach. Rules: cite specific numbers, no generic advice, compare periods when possible.${thinData ? " Data is LIMITED — warn the user." : ""} Return JSON {"cards":[{"id","tone":"positive|neutral|negative|tip","emoji","headline","detail","deltaLabel?"}]}. Max 4 cards.`;
+        const payload = richPrompt ?? JSON.stringify(ctx);
+        const result = await geminiJson<{ cards: Omit<InsightCard, "ai">[] }>(
+          system,
+          payload
+        );
+        return (result.cards ?? []).map((c) => ({ ...c, ai: true }));
+      }
+    );
+    return {
+      insights,
+      error: thinData
+        ? "Limited analytics history — insights may be less accurate."
+        : undefined,
+    };
   } catch {
     return { insights: fallbackInsights(), error: AI_SUPPORT_MESSAGE };
   }
@@ -178,7 +188,9 @@ export interface ChatResult {
 export async function chat(
   message: string,
   ctx: AiChannelContext,
-  videos: VideoSummary[]
+  videos: VideoSummary[],
+  richPrompt?: string,
+  thinData?: boolean
 ): Promise<ChatResult> {
   const intent = detectActionIntent(message);
 
@@ -231,7 +243,15 @@ export async function chat(
     return { content: fallbackChat() };
   }
   try {
-    const system = `You are TubePath's AI growth coach for the channel "${ctx.channelTitle}". Be concise, specific, and encouraging. Recent context: views change ${ctx.viewsChange.toFixed(0)}%, engagement change ${ctx.engagementChange.toFixed(0)}%, top video "${ctx.topVideoTitle}".`;
+    const system = `You are TubePath's analytics coach for "${ctx.channelTitle}". Rules:
+- NEVER give generic YouTube advice without citing the user's data.
+- Use ONLY facts from the DATA block below.
+- Compare metrics to prior periods when relevant.
+- Label competitor information as public data.
+${thinData ? "- WARN: analytics history is limited; state uncertainty clearly." : ""}
+
+DATA:
+${richPrompt ?? JSON.stringify(ctx)}`;
     const content = await geminiText(system, message);
     return { content };
   } catch {

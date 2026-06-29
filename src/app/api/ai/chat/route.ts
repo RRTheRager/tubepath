@@ -18,10 +18,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 });
   }
 
-  const { ctx, videos, youtubeConnected } = await buildAiContext(account);
+  const { ctx, videos, youtubeConnected, richPrompt, thinData } =
+    await buildAiContext(account);
   if (!youtubeConnected) {
     return NextResponse.json({ content: AI_SUPPORT_MESSAGE });
   }
-  const result = await chat(message, ctx, videos);
+  const result = await chat(message, ctx, videos, richPrompt, thinData);
   return NextResponse.json(result);
 }

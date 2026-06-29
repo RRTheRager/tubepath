@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "TubePath — YouTube analytics that feel premium",
   description:
-    "Track your YouTube views, engagement, and growth with a macOS-grade interface, an addictive insights feed, and an AI coach that takes action.",
+    "Track your YouTube views, engagement, and growth with a polished dashboard, daily insights, and an AI coach that takes action.",
   applicationName: "TubePath",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -40,7 +40,7 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#10131a" },
   ],
 };
-// Avoid a flash of the wrong theme before hydration.
+
 const themeInit = `
 (function(){try{
   var m = localStorage.getItem('tubepath-theme') || 'system';

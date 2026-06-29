@@ -2,23 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Zap } from "lucide-react";
 import type { DailyMetric, MetricKey, OverviewPayload } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
 import { Card, CardHeader } from "@/components/ui/Card";
-import { StatCard } from "@/components/ui/StatCard";
-import { Delta } from "@/components/ui/Delta";
-import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { MetricChart, type ChartPoint } from "@/components/charts/MetricChart";
 import { UpgradeTeaser } from "@/components/access/UpgradeTeaser";
 import { Loading } from "@/components/ui/Loading";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { AnomalyList } from "@/components/dashboard/AnomalyList";
+import { StudioAnalyticsPanel } from "@/components/analytics/StudioAnalyticsPanel";
 import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
 import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
 import { formatCompact } from "@/lib/utils";
 
-type Range = "7" | "30" | "90";
+type Range = "7" | "28" | "90";
+type StudioTab = "overview" | "reach" | "engagement" | "audience" | "revenue";
+
+const STUDIO_TABS: { value: StudioTab; label: string }[] = [
+  { value: "overview", label: "Overview" },
+  { value: "reach", label: "Reach" },
+  { value: "engagement", label: "Engagement" },
+  { value: "audience", label: "Audience" },
+  { value: "revenue", label: "Revenue" },
+];
 
 function toChart(metrics: DailyMetric[], key: MetricKey, days: number): ChartPoint[] {
   const slice = metrics.slice(-days);
@@ -41,7 +48,8 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const { hasChannel, loading: ytLoading } = useYouTubeLinked();
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
-  const [range, setRange] = useState<Range>("30");
+  const [range, setRange] = useState<Range>("28");
+  const [studioTab, setStudioTab] = useState<StudioTab>("overview");
   const [loading, setLoading] = useState(true);
 
   const caps = session?.capabilities;
@@ -52,7 +60,8 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
-    fetch("/api/overview", { cache: "no-store" })
+    setLoading(true);
+    fetch(`/api/overview?days=${range}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (j?.youtubeConnected && j.overview) setOverview(j.overview);
@@ -60,117 +69,86 @@ export default function DashboardPage() {
       })
       .catch(() => setOverview(null))
       .finally(() => setLoading(false));
-  }, [hasChannel]);
+  }, [hasChannel, range]);
 
   const days = Number(range);
-  const maxDays = caps?.historyDays ?? 30;
-
   const rangeOptions = useMemo(() => {
     const opts: { value: Range; label: string }[] = [
-      { value: "7", label: "7d" },
-      { value: "30", label: "30d" },
+      { value: "7", label: "7 days" },
+      { value: "28", label: "28 days" },
     ];
-    if (maxDays >= 90) opts.push({ value: "90", label: "90d" });
+    if ((caps?.historyDays ?? 30) >= 90) opts.push({ value: "90", label: "90 days" });
     return opts;
-  }, [maxDays]);
+  }, [caps?.historyDays]);
 
   if (ytLoading || (hasChannel && loading) || !caps) {
-    return <Loading label="Crunching your numbers" />;
+    return <Loading label="Loading analytics" />;
   }
 
-  if (!hasChannel) {
-    return <YouTubeConnectPrompt variant="select-channel" />;
-  }
+  if (!hasChannel) return <YouTubeConnectPrompt variant="select-channel" />;
 
   if (!overview) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
         <p className="max-w-sm text-sm text-muted-foreground">
-          We couldn&apos;t load your channel data. Try reconnecting Google in
-          Settings.
+          We couldn&apos;t load your channel data right now. Try reconnecting in
+          Settings or contact support if this continues.
         </p>
       </div>
     );
   }
 
-  const s = overview.snapshot;
+  const studio = overview.studio;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            {overview.channel.title} &middot;{" "}
-            {formatCompact(overview.channel.subscriberCount)} subscribers
-          </p>
-        </div>
-        <SegmentedControl
-          options={rangeOptions}
-          value={range}
-          onChange={setRange}
-        />
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Dashboard"
+        description={`${overview.channel.title} · ${formatCompact(overview.channel.subscriberCount)} subscribers`}
+        action={
+          <SegmentedControl options={rangeOptions} value={range} onChange={setRange} />
+        }
+      />
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mac-card relative overflow-hidden"
-      >
-        <div className="pointer-events-none absolute -right-8 -top-8 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Zap className="h-4 w-4 text-primary" /> Engagement rate
-        </div>
-        <div className="mt-2 flex items-end gap-3">
-          <AnimatedNumber
-            value={s.engagementRate}
-            format={(n) => `${n.toFixed(1)}%`}
-            className="text-5xl font-bold tracking-tight"
-          />
-          <div className="mb-2">
-            <Delta value={s.periodChange.engagement ?? 0} />
+      {studio && (
+        <div className="space-y-4">
+          <div className="overflow-x-auto pb-1">
+            <div className="flex min-w-max gap-1 rounded-xl border border-border bg-card/60 p-1">
+              {STUDIO_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setStudioTab(tab.value)}
+                  className={`tap-target rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    studioTab === tab.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
+          <StudioAnalyticsPanel studio={studio} tab={studioTab} />
         </div>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Likes + comments per view. The single best signal of how far your next
-          upload will travel.
-        </p>
+      )}
+
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <Card>
+          <CardHeader title="Views over time" subtitle={`Last ${days} days`} />
+          <MetricChart
+            data={toChart(overview.metrics, "views", days)}
+            formatValue={(v) => v.toLocaleString()}
+          />
+        </Card>
       </motion.div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <StatCard label="Views (28d)" value={s.views} change={s.periodChange.views} format={formatCompact} />
-        <StatCard label="Subscribers" value={s.subscribers} change={s.periodChange.subscribers} format={formatCompact} />
-        <StatCard label="Likes" value={s.likes} change={s.periodChange.likes} format={formatCompact} />
-        <StatCard label="Comments" value={s.comments} change={s.periodChange.comments} format={formatCompact} />
-        <StatCard
-          label="Watch time (hrs)"
-          value={s.watchTimeHours}
-          change={s.periodChange.watchTime}
-          format={formatCompact}
-          locked={!advanced}
-        />
-        <StatCard
-          label="CTR"
-          value={s.ctr}
-          change={s.periodChange.ctr}
-          format={(n) => `${n.toFixed(1)}%`}
-          locked={!advanced}
-        />
-      </div>
-
-      <Card>
-        <CardHeader title="Views" subtitle={`Last ${days} days`} />
-        <MetricChart
-          data={toChart(overview.metrics, "views", days)}
-          formatValue={(v) => v.toLocaleString()}
-        />
-      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <UpgradeTeaser
           enabled={advanced}
           title="Engagement trends"
-          description="See engagement, CTR, and watch time over time with Premium."
+          description="Unlock engagement, CTR, and watch-time charts with Premium."
         >
           <Card>
             <CardHeader title="Engagement rate" subtitle={`Last ${days} days`} />
@@ -184,8 +162,8 @@ export default function DashboardPage() {
 
         <UpgradeTeaser
           enabled={advanced}
-          title="Watch time"
-          description="Unlock watch-time analytics with Premium."
+          title="Watch time trends"
+          description="Unlock watch-time charts with Premium."
         >
           <Card>
             <CardHeader title="Watch time (hrs)" subtitle={`Last ${days} days`} />
@@ -201,7 +179,7 @@ export default function DashboardPage() {
       <UpgradeTeaser
         enabled={caps.anomalyDetection}
         title="Spike & anomaly detection"
-        description="Premium flags unusual spikes and dips and explains what drove them."
+        description="Premium flags unusual spikes and dips in your metrics."
         minHeight={160}
       >
         <AnomalyList anomalies={overview.anomalies} />

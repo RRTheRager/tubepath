@@ -65,9 +65,9 @@ export default async function LandingPage() {
             </span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-            Track views, engagement, and growth in an interface that feels like
-            macOS and an insights feed as addictive as your For You page. With an
-            AI coach that doesn&apos;t just advise &mdash; it takes action.
+            Track views, engagement, and growth in a clean dashboard, a daily
+            insights feed, and an AI coach that doesn&apos;t just advise &mdash;
+            it takes action.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3">
@@ -92,7 +92,7 @@ export default async function LandingPage() {
               <div className="flex h-10 items-center gap-3 border-b border-border bg-card/80 px-4">
                 <TrafficLights />
                 <span className="text-xs text-muted-foreground">
-                  TubePath &mdash; For You
+                  TubePath &mdash; Insights
                 </span>
               </div>
               <div className="grid gap-4 p-6 md:grid-cols-3">
@@ -131,8 +131,8 @@ export default async function LandingPage() {
             },
             {
               icon: Sparkles,
-              title: "An addictive insights feed",
-              body: "A swipeable For You feed of bite-sized wins, streaks, and daily pulses that make checking your stats a habit.",
+              title: "Daily insights feed",
+              body: "Bite-sized wins, streaks, and daily pulses so you always know what changed and what to do next.",
             },
             {
               icon: Bot,

@@ -98,10 +98,10 @@ export default function FeedPage() {
         : overview.insights;
 
   return (
-    <div className="space-y-4">
+    <div className="feed-scroll space-y-4 animate-fade-in">
       <div className="mb-2">
-        <h1 className="text-2xl font-bold tracking-tight">For You</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Insights</h1>
+        <p className="text-sm text-muted-foreground md:text-base">
           Your daily creator briefing
         </p>
       </div>

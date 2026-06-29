@@ -27,7 +27,7 @@ export interface Account {
   cancelAtPeriodEnd: boolean;
   /** Whether a real YouTube channel is connected (vs mock data). */
   youtubeConnected: boolean;
-  /** Login streak in days (TikTok-style retention hook). */
+  /** Login streak in days. */
   streak: number;
   /** Stripe identifiers (only set when real billing is configured). */
   stripeCustomerId?: string;
@@ -190,6 +190,41 @@ export interface DailyPulse {
   lastSynced: string;
 }
 
+export interface StudioBreakdownRow {
+  label: string;
+  views: number;
+  pct: number;
+}
+
+export interface StudioRevenue {
+  estimatedRevenue: number;
+  estimatedAdRevenue: number;
+  playbackCpm: number;
+  rpm: number;
+}
+
+export interface StudioAnalytics {
+  periodDays: number;
+  monetized: boolean;
+  totals: {
+    views: number;
+    impressions: number;
+    ctr: number;
+    watchTimeHours: number;
+    avgViewDurationSeconds: number;
+    avgViewPercentage: number;
+    subscribersGained: number;
+    subscribersLost: number;
+    likes: number;
+    comments: number;
+    shares: number;
+  };
+  revenue: StudioRevenue | null;
+  trafficSources: StudioBreakdownRow[];
+  devices: StudioBreakdownRow[];
+  countries: StudioBreakdownRow[];
+}
+
 export interface OverviewPayload {
   channel: ChannelSummary;
   snapshot: MetricSnapshot;
@@ -197,6 +232,7 @@ export interface OverviewPayload {
   anomalies: Anomaly[];
   pulse: DailyPulse;
   insights: InsightCard[];
+  studio?: StudioAnalytics;
 }
 
 // ---- AI suggestion shapes -------------------------------------------------

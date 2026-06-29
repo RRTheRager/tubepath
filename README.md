@@ -1,8 +1,7 @@
 # TubePath
 
-YouTube analytics that feel premium. A macOS-grade interface wrapped around a
-TikTok-style "For You" insights feed, with an AI coach that doesn't just advise -
-it takes action.
+YouTube analytics that feel premium — a polished dashboard, daily insights feed,
+and an AI coach that doesn't just advise, it takes action.
 
 ![status](https://img.shields.io/badge/stack-Next.js%2015%20%C2%B7%20React%2019%20%C2%B7%20TypeScript-blue)
 
@@ -110,7 +109,7 @@ src/
   app/
     page.tsx              Landing + pricing/paywall
     app/                  Authenticated app (gated by subscription status)
-      feed/               TikTok-style "For You" insights feed (home)
+      feed/               Daily insights feed (home)
       dashboard/          Analytics: hero, stats, charts, anomalies
       videos/             Video list + per-video deep dive
       suggestions/        AI Studio (premium)

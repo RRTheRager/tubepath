@@ -1,44 +1,45 @@
-import { getDataProvider, YouTubeNotConnectedError } from "@/lib/data/provider";
-import type { Account, VideoSummary } from "@/lib/types";
-import type { AiChannelContext } from "./index";
-
-export async function buildAiContext(account: Account): Promise<{
-  ctx: AiChannelContext;
-  videos: VideoSummary[];
-  youtubeConnected: boolean;
-}> {
-  try {
-    const provider = await getDataProvider(account);
-    const [overview, videos] = await Promise.all([
-      provider.getOverview({ historyDays: 90 }),
-      provider.getVideos(),
-    ]);
-
-    const topVideo = [...videos].sort((a, b) => b.views - a.views)[0];
-
-    return {
-      youtubeConnected: true,
-      ctx: {
-        channelTitle: overview.channel.title,
-        viewsChange: overview.snapshot.periodChange.views ?? 0,
-        engagementChange: overview.snapshot.periodChange.engagement ?? 0,
-        topVideoTitle: topVideo?.title ?? "your latest video",
-      },
-      videos,
-    };
-  } catch (err) {
-    if (err instanceof YouTubeNotConnectedError) {
-      return {
-        youtubeConnected: false,
-        ctx: {
-          channelTitle: account.name,
-          viewsChange: 0,
-          engagementChange: 0,
-          topVideoTitle: "",
-        },
-        videos: [],
-      };
-    }
-    throw err;
-  }
-}
+import type { Account, VideoSummary } from "@/lib/types";
+import { buildRichAnalyticsContext } from "./analytics-context";
+import type { AiChannelContext } from "./index";
+
+export async function buildAiContext(account: Account): Promise<{
+  ctx: AiChannelContext;
+  videos: VideoSummary[];
+  youtubeConnected: boolean;
+  richPrompt: string;
+  thinData: boolean;
+}> {
+  const rich = await buildRichAnalyticsContext(account);
+
+  if (!rich.youtubeConnected) {
+    return {
+      youtubeConnected: false,
+      thinData: true,
+      richPrompt: rich.promptBlock,
+      ctx: {
+        channelTitle: account.name,
+        viewsChange: 0,
+        engagementChange: 0,
+        topVideoTitle: "",
+      },
+      videos: [],
+    };
+  }
+
+  const { getDataProvider } = await import("@/lib/data/provider");
+  const provider = await getDataProvider(account);
+  const videos = await provider.getVideos();
+
+  return {
+    youtubeConnected: true,
+    thinData: rich.thinData,
+    richPrompt: rich.promptBlock,
+    ctx: {
+      channelTitle: rich.channelTitle,
+      viewsChange: rich.viewsChange,
+      engagementChange: rich.engagementChange,
+      topVideoTitle: rich.topVideoTitle,
+    },
+    videos,
+  };
+}
