@@ -4,10 +4,13 @@ import { geminiPing } from "@/lib/ai/gemini";
 
 /**
  * Diagnostic endpoint: GET /api/ai/health
- * Reports the detected key (masked) and tests each configured model directly so
- * 429s, retry delays, and which model still has quota are all visible.
+ * Full key diagnostics are development-only.
  */
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ ok: isAiConfigured() });
+  }
+
   const key = env.gemini.apiKey;
   const keyInfo = {
     present: key.length > 0,
@@ -31,7 +34,6 @@ export async function GET() {
     });
   }
 
-  // Test the primary and fallback models (deduped) one after another.
   const models = [...new Set([env.gemini.model, env.gemini.fallbackModel])];
   const results = [];
   for (const m of models) {

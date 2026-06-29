@@ -13,7 +13,10 @@ export async function GET(req: Request) {
   const account = await getCurrentAccount();
   const caps = capabilitiesFor(account.status);
   const daysParam = new URL(req.url).searchParams.get("days");
-  const studioDays = daysParam ? Number(daysParam) : 28;
+  const parsedDays = daysParam ? Number(daysParam) : 28;
+  const studioDays = Number.isFinite(parsedDays)
+    ? Math.min(Math.max(parsedDays, 7), 90)
+    : 28;
 
   if (!caps.canEnterApp) {
     return NextResponse.json({ error: "No active subscription" }, { status: 403 });

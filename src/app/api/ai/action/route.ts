@@ -32,11 +32,27 @@ export async function POST(req: Request) {
   const provider = await getDataProvider(account);
 
   const patch: { title?: string; description?: string; tags?: string[] } = {};
-  if (body.name === "update_title") patch.title = String(args.title ?? "");
+  if (body.name === "update_title") {
+    const title = String(args.title ?? "").trim();
+    if (!title || title.length > 100) {
+      return NextResponse.json(
+        { error: "Title must be 1–100 characters" },
+        { status: 400 }
+      );
+    }
+    patch.title = title;
+  }
   if (body.name === "update_description")
     patch.description = String(args.description ?? "");
-  if (body.name === "update_tags")
-    patch.tags = Array.isArray(args.tags) ? (args.tags as string[]) : [];
+  if (body.name === "update_tags") {
+    const tags = Array.isArray(args.tags)
+      ? (args.tags as string[]).map((t) => String(t).trim()).filter(Boolean)
+      : [];
+    if (tags.length > 500) {
+      return NextResponse.json({ error: "Too many tags" }, { status: 400 });
+    }
+    patch.tags = tags;
+  }
 
   const updated = await provider.updateVideo(videoId, patch);
   if (!updated) {

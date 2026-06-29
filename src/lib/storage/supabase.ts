@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type PostgrestError, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import type {
   Account,
@@ -17,6 +17,24 @@ function db(): SupabaseClient {
     });
   }
   return client;
+}
+
+function throwIfError(error: PostgrestError | null, op: string): void {
+  if (error) throw new Error(`${op}: ${error.message}`);
+}
+
+const VALID_STATUSES = new Set<SubscriptionStatus>([
+  "none",
+  "trialing",
+  "active",
+  "past_due",
+  "canceled",
+]);
+
+function parseStatus(raw: string): SubscriptionStatus {
+  return VALID_STATUSES.has(raw as SubscriptionStatus)
+    ? (raw as SubscriptionStatus)
+    : "none";
 }
 
 interface AccountRow {
@@ -56,7 +74,7 @@ function rowToAccount(r: AccountRow): Account {
     id: r.id,
     email: r.email,
     name: r.name,
-    status: r.status as SubscriptionStatus,
+    status: parseStatus(r.status),
     trialEnd: r.trial_end,
     currentPeriodEnd: r.current_period_end,
     graceEndsAt: r.grace_ends_at,
@@ -125,32 +143,36 @@ function googleAccountToRow(ga: GoogleAccount): GoogleAccountRow {
 
 export class SupabaseStorage implements Storage {
   async getAccount(id: string): Promise<Account | null> {
-    const { data } = await db()
+    const { data, error } = await db()
       .from("accounts")
       .select("*")
       .eq("id", id)
       .maybeSingle();
+    throwIfError(error, "getAccount");
     return data ? rowToAccount(data as AccountRow) : null;
   }
 
   async saveAccount(account: Account): Promise<void> {
-    await db().from("accounts").upsert(accountToRow(account));
+    const { error } = await db().from("accounts").upsert(accountToRow(account));
+    throwIfError(error, "saveAccount");
   }
 
   async listGoogleAccounts(tubepathAccountId: string): Promise<GoogleAccount[]> {
-    const { data } = await db()
+    const { data, error } = await db()
       .from("google_accounts")
       .select("*")
       .eq("account_id", tubepathAccountId);
+    throwIfError(error, "listGoogleAccounts");
     return (data ?? []).map((r) => rowToGoogleAccount(r as GoogleAccountRow));
   }
 
   async getGoogleAccount(id: string): Promise<GoogleAccount | null> {
-    const { data } = await db()
+    const { data, error } = await db()
       .from("google_accounts")
       .select("*")
       .eq("id", id)
       .maybeSingle();
+    throwIfError(error, "getGoogleAccount");
     return data ? rowToGoogleAccount(data as GoogleAccountRow) : null;
   }
 
@@ -158,31 +180,37 @@ export class SupabaseStorage implements Storage {
     tubepathAccountId: string,
     googleSub: string
   ): Promise<GoogleAccount | null> {
-    const { data } = await db()
+    const { data, error } = await db()
       .from("google_accounts")
       .select("*")
       .eq("account_id", tubepathAccountId)
       .eq("google_sub", googleSub)
       .maybeSingle();
+    throwIfError(error, "getGoogleAccountBySub");
     return data ? rowToGoogleAccount(data as GoogleAccountRow) : null;
   }
 
   async saveGoogleAccount(account: GoogleAccount): Promise<void> {
-    await db().from("google_accounts").upsert(googleAccountToRow(account));
+    const { error } = await db()
+      .from("google_accounts")
+      .upsert(googleAccountToRow(account));
+    throwIfError(error, "saveGoogleAccount");
   }
 
   async deleteGoogleAccount(id: string): Promise<void> {
-    await db().from("google_accounts").delete().eq("id", id);
+    const { error } = await db().from("google_accounts").delete().eq("id", id);
+    throwIfError(error, "deleteGoogleAccount");
   }
 
   async getLegacyCredentials(
     tubepathAccountId: string
   ): Promise<GoogleCredentials | null> {
-    const { data } = await db()
+    const { data, error } = await db()
       .from("youtube_credentials")
       .select("*")
       .eq("account_id", tubepathAccountId)
       .maybeSingle();
+    throwIfError(error, "getLegacyCredentials");
     if (!data) return null;
     return {
       googleAccountId: tubepathAccountId,
@@ -194,6 +222,10 @@ export class SupabaseStorage implements Storage {
   }
 
   async deleteLegacyCredentials(tubepathAccountId: string): Promise<void> {
-    await db().from("youtube_credentials").delete().eq("account_id", tubepathAccountId);
+    const { error } = await db()
+      .from("youtube_credentials")
+      .delete()
+      .eq("account_id", tubepathAccountId);
+    throwIfError(error, "deleteLegacyCredentials");
   }
 }

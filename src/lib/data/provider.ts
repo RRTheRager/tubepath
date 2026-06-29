@@ -6,6 +6,7 @@ import type {
 } from "@/lib/types";
 import { isYouTubeConfigured } from "@/lib/env";
 import { getCredentials } from "@/lib/store";
+import { requireChannelId } from "@/lib/youtube/channels";
 import { YouTubeProvider } from "./youtube";
 
 export interface OverviewOptions {
@@ -24,7 +25,12 @@ export interface DataProvider {
 
 /** True when OAuth is configured and we can load live channel data. */
 export async function canLoadYouTubeData(account: Account): Promise<boolean> {
-  if (!isYouTubeConfigured() || !account.youtubeChannelId) return false;
+  if (!isYouTubeConfigured()) return false;
+  try {
+    requireChannelId(account);
+  } catch {
+    return false;
+  }
   const creds = await getCredentials(account.id);
   return Boolean(creds?.refreshToken);
 }
