@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Sparkles, Lock } from "lucide-react";
-import { useSession } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/Button";
+import { useActivatePremium } from "./useActivatePremium";
 
 export function PremiumGate({
   title,
@@ -14,17 +13,7 @@ export function PremiumGate({
   description: string;
   perks: string[];
 }) {
-  const { refresh } = useSession();
-  const [busy, setBusy] = useState(false);
-
-  const unlock = async () => {
-    setBusy(true);
-    const res = await fetch("/api/billing/activate-now", { method: "POST" });
-    const json = await res.json();
-    if (json.url) window.location.href = json.url;
-    else await refresh();
-    setBusy(false);
-  };
+  const { activate, busy, error } = useActivatePremium();
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -42,9 +31,12 @@ export function PremiumGate({
             </li>
           ))}
         </ul>
-        <Button className="mt-6 w-full" onClick={unlock} disabled={busy}>
+        <Button className="mt-6 w-full" onClick={activate} disabled={busy}>
           <Sparkles className="h-4 w-4" /> Unlock with Premium
         </Button>
+        {error && (
+          <p className="mt-2 text-xs text-destructive">{error}</p>
+        )}
         <p className="mt-2 text-xs text-muted-foreground">
           Ends your trial early and starts your subscription.
         </p>

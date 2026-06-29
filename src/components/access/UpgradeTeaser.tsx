@@ -1,9 +1,8 @@
 "use client";
 
 import { Lock, Sparkles } from "lucide-react";
-import { useState } from "react";
-import { useSession } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/Button";
+import { useActivatePremium } from "./useActivatePremium";
 
 /**
  * Wrap premium-only content. During the trial (limited access) the children are
@@ -23,19 +22,9 @@ export function UpgradeTeaser({
   children: React.ReactNode;
   minHeight?: number;
 }) {
-  const { refresh } = useSession();
-  const [busy, setBusy] = useState(false);
+  const { activate, busy, error } = useActivatePremium();
 
   if (enabled) return <>{children}</>;
-
-  const unlock = async () => {
-    setBusy(true);
-    const res = await fetch("/api/billing/activate-now", { method: "POST" });
-    const json = await res.json();
-    if (json.url) window.location.href = json.url;
-    else await refresh();
-    setBusy(false);
-  };
 
   return (
     <div className="relative overflow-hidden rounded-lg" style={{ minHeight }}>
@@ -52,10 +41,11 @@ export function UpgradeTeaser({
             {description}
           </p>
         </div>
-        <Button onClick={unlock} disabled={busy} size="sm">
+        <Button onClick={activate} disabled={busy} size="sm">
           <Sparkles className="h-4 w-4" />
           Unlock with Premium
         </Button>
+        {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
     </div>
   );

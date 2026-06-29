@@ -6,7 +6,6 @@ import type {
 } from "@/lib/types";
 import { isYouTubeConfigured } from "@/lib/env";
 import { getCredentials } from "@/lib/store";
-import { MockProvider } from "./mock";
 import { YouTubeProvider } from "./youtube";
 
 export interface OverviewOptions {
@@ -17,31 +16,38 @@ export interface DataProvider {
   getOverview(opts: OverviewOptions): Promise<OverviewPayload>;
   getVideos(): Promise<VideoSummary[]>;
   getVideo(id: string): Promise<VideoDetail | null>;
-  /** Used by chatbot tool-calling actions to mutate metadata. */
   updateVideo(
     id: string,
     patch: { title?: string; description?: string; tags?: string[] }
   ): Promise<VideoSummary | null>;
 }
 
-/**
- * Choose the active provider for an account. The UI never knows which is used.
- * Real YouTube data is used automatically when OAuth is configured, the channel
- * is connected, and stored credentials exist; otherwise the mock provider.
- */
-export async function getDataProvider(
-  account?: Account
-): Promise<DataProvider> {
-  if (
-    account &&
-    isYouTubeConfigured() &&
-    account.youtubeConnected &&
-    account.youtubeChannelId
-  ) {
-    const creds = await getCredentials(account.id);
-    if (creds?.refreshToken) {
-      return new YouTubeProvider(account, creds);
-    }
+/** True when OAuth is configured and we can load live channel data. */
+export async function canLoadYouTubeData(account: Account): Promise<boolean> {
+  if (!isYouTubeConfigured() || !account.youtubeChannelId) return false;
+  const creds = await getCredentials(account.id);
+  return Boolean(creds?.refreshToken);
+}
+
+/** Returns the YouTube data provider — never serves demo/mock analytics. */
+export async function getDataProvider(account: Account): Promise<DataProvider> {
+  if (!(await canLoadYouTubeData(account))) {
+    throw new YouTubeNotConnectedError();
   }
-  return new MockProvider();
+  const creds = await getCredentials(account.id);
+  return new YouTubeProvider(account, creds!);
+}
+
+export class YouTubeNotConnectedError extends Error {
+  constructor() {
+    super("YouTube not connected");
+    this.name = "YouTubeNotConnectedError";
+  }
+}
+
+export class YouTubeDataError extends Error {
+  constructor(message = "Failed to load YouTube data") {
+    super(message);
+    this.name = "YouTubeDataError";
+  }
 }

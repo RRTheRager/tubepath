@@ -14,6 +14,8 @@ import { UpgradeTeaser } from "@/components/access/UpgradeTeaser";
 import { Loading } from "@/components/ui/Loading";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { AnomalyList } from "@/components/dashboard/AnomalyList";
+import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
+import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
 import { formatCompact } from "@/lib/utils";
 
 type Range = "7" | "30" | "90";
@@ -37,18 +39,28 @@ function toChart(metrics: DailyMetric[], key: MetricKey, days: number): ChartPoi
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const { hasChannel, loading: ytLoading } = useYouTubeLinked();
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
   const [range, setRange] = useState<Range>("30");
+  const [loading, setLoading] = useState(true);
 
   const caps = session?.capabilities;
   const advanced = caps?.advancedCharts ?? false;
 
   useEffect(() => {
+    if (!hasChannel) {
+      setLoading(false);
+      return;
+    }
     fetch("/api/overview", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => j && setOverview(j.overview))
-      .catch(() => {});
-  }, []);
+      .then((j) => {
+        if (j?.youtubeConnected && j.overview) setOverview(j.overview);
+        else setOverview(null);
+      })
+      .catch(() => setOverview(null))
+      .finally(() => setLoading(false));
+  }, [hasChannel]);
 
   const days = Number(range);
   const maxDays = caps?.historyDays ?? 30;
@@ -62,7 +74,24 @@ export default function DashboardPage() {
     return opts;
   }, [maxDays]);
 
-  if (!overview || !caps) return <Loading label="Crunching your numbers" />;
+  if (ytLoading || (hasChannel && loading) || !caps) {
+    return <Loading label="Crunching your numbers" />;
+  }
+
+  if (!hasChannel) {
+    return <YouTubeConnectPrompt variant="select-channel" />;
+  }
+
+  if (!overview) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
+        <p className="max-w-sm text-sm text-muted-foreground">
+          We couldn&apos;t load your channel data. Try reconnecting Google in
+          Settings.
+        </p>
+      </div>
+    );
+  }
 
   const s = overview.snapshot;
 
@@ -83,7 +112,6 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Engagement hero */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -109,7 +137,6 @@ export default function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* Stat grid */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <StatCard label="Views (28d)" value={s.views} change={s.periodChange.views} format={formatCompact} />
         <StatCard label="Subscribers" value={s.subscribers} change={s.periodChange.subscribers} format={formatCompact} />
@@ -131,7 +158,6 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Views chart - always available */}
       <Card>
         <CardHeader title="Views" subtitle={`Last ${days} days`} />
         <MetricChart
@@ -140,7 +166,6 @@ export default function DashboardPage() {
         />
       </Card>
 
-      {/* Advanced charts - premium */}
       <div className="grid gap-4 md:grid-cols-2">
         <UpgradeTeaser
           enabled={advanced}
@@ -173,7 +198,6 @@ export default function DashboardPage() {
         </UpgradeTeaser>
       </div>
 
-      {/* Anomalies - premium */}
       <UpgradeTeaser
         enabled={caps.anomalyDetection}
         title="Spike & anomaly detection"

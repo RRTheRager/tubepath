@@ -3,6 +3,7 @@ import { getCurrentAccount } from "@/lib/session";
 import { capabilitiesFor } from "@/lib/access";
 import { buildAiContext } from "@/lib/ai/context";
 import { chat } from "@/lib/ai";
+import { AI_SUPPORT_MESSAGE } from "@/lib/ai/constants";
 
 export async function POST(req: Request) {
   const account = await getCurrentAccount();
@@ -17,7 +18,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 });
   }
 
-  const { ctx, videos } = await buildAiContext(account);
+  const { ctx, videos, youtubeConnected } = await buildAiContext(account);
+  if (!youtubeConnected) {
+    return NextResponse.json({ content: AI_SUPPORT_MESSAGE });
+  }
   const result = await chat(message, ctx, videos);
   return NextResponse.json(result);
 }

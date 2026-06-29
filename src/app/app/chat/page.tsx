@@ -7,6 +7,9 @@ import type { ChatMessage } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
 import { PremiumGate } from "@/components/access/PremiumGate";
 import { Loading } from "@/components/ui/Loading";
+import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
+import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
+import { AI_SUPPORT_MESSAGE } from "@/lib/ai/constants";
 import { cn } from "@/lib/utils";
 
 const SUGGESTIONS = [
@@ -22,6 +25,7 @@ function uid() {
 
 export default function ChatPage() {
   const { data: session, loading } = useSession();
+  const { hasChannel, loading: ytLoading } = useYouTubeLinked();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -32,7 +36,7 @@ export default function ChatPage() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, thinking]);
 
-  if (loading) return <Loading />;
+  if (loading || ytLoading) return <Loading />;
 
   if (!session?.capabilities.ai) {
     return (
@@ -47,6 +51,10 @@ export default function ChatPage() {
         ]}
       />
     );
+  }
+
+  if (!hasChannel) {
+    return <YouTubeConnectPrompt variant="select-channel" />;
   }
 
   const send = async (text: string) => {
@@ -68,14 +76,14 @@ export default function ChatPage() {
         {
           id: uid(),
           role: "assistant",
-          content: json.content ?? "Sorry, something went wrong.",
+          content: json.content ?? AI_SUPPORT_MESSAGE,
           pendingAction: json.pendingAction,
         },
       ]);
     } catch {
       setMessages((m) => [
         ...m,
-        { id: uid(), role: "assistant", content: "Network error. Try again." },
+        { id: uid(), role: "assistant", content: AI_SUPPORT_MESSAGE },
       ]);
     } finally {
       setThinking(false);

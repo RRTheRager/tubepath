@@ -10,6 +10,7 @@ import {
   fallbackChat,
   fallbackInsights,
   fallbackSuggestions,
+  AI_SUPPORT_MESSAGE,
 } from "./fallback";
 
 export interface AiChannelContext {
@@ -45,8 +46,10 @@ async function cached<T>(
 
 export async function generateSuggestions(
   topic: string
-): Promise<SuggestionBundle> {
-  if (!isAiConfigured()) return fallbackSuggestions(topic);
+): Promise<SuggestionBundle & { error?: string }> {
+  if (!isAiConfigured()) {
+    return { ...fallbackSuggestions(), error: AI_SUPPORT_MESSAGE };
+  }
   try {
     // Cache for 1h so re-opening the studio for the same topic is free.
     return await cached(`suggest:${topic}`, 3_600_000, async () => {
@@ -59,7 +62,7 @@ export async function generateSuggestions(
       return { ...bundle, ai: true };
     });
   } catch {
-    return fallbackSuggestions(topic);
+    return { ...fallbackSuggestions(), error: AI_SUPPORT_MESSAGE };
   }
 }
 
@@ -67,11 +70,13 @@ export async function generateSuggestions(
 
 export async function generateInsights(
   ctx: AiChannelContext
-): Promise<InsightCard[]> {
-  if (!isAiConfigured()) return fallbackInsights(ctx);
+): Promise<{ insights: InsightCard[]; error?: string }> {
+  if (!isAiConfigured()) {
+    return { insights: fallbackInsights(), error: AI_SUPPORT_MESSAGE };
+  }
   try {
     // Cache for 10m so refreshing/revisiting the feed doesn't re-call Gemini.
-    return await cached(`insights:${JSON.stringify(ctx)}`, 600_000, async () => {
+    const insights = await cached(`insights:${JSON.stringify(ctx)}`, 600_000, async () => {
       const system =
         'You are a YouTube analytics coach. Return JSON {"cards":[{"id","tone":"positive|neutral|negative|tip","emoji","headline","detail","deltaLabel?"}]}. Keep headlines punchy and addictive. Max 4 cards.';
       const result = await geminiJson<{ cards: Omit<InsightCard, "ai">[] }>(
@@ -80,8 +85,9 @@ export async function generateInsights(
       );
       return (result.cards ?? []).map((c) => ({ ...c, ai: true }));
     });
+    return { insights };
   } catch {
-    return fallbackInsights(ctx);
+    return { insights: fallbackInsights(), error: AI_SUPPORT_MESSAGE };
   }
 }
 
@@ -109,7 +115,7 @@ async function craftValue(
   video: VideoSummary
 ): Promise<{ value: string | string[]; preview: string }> {
   if (kind === "title") {
-    let title = `I Tried This for 30 Days - Here's What Happened`;
+    let title = video.title;
     if (isAiConfigured()) {
       try {
         title = (
@@ -121,43 +127,47 @@ async function craftValue(
           .replace(/^["']|["']$/g, "")
           .slice(0, 100);
       } catch {
-        /* keep fallback */
+        return { value: title, preview: AI_SUPPORT_MESSAGE };
       }
     } else {
-      title = `${video.title.replace(/\?+$/, "")} (What Actually Worked)`;
+      return { value: title, preview: AI_SUPPORT_MESSAGE };
     }
     return { value: title, preview: title };
   }
 
   if (kind === "description") {
-    let desc = `In this video I break down exactly what worked and the steps you can copy.\n\nTimestamps:\n00:00 Intro\n00:45 The method\n07:10 Results`;
-    if (isAiConfigured()) {
-      try {
-        desc = await geminiText(
-          "You are a YouTube SEO copywriter. Write a compelling description with a hook, body, CTA, and timestamps.",
-          `Write a description for the video titled: "${video.title}"`
-        );
-      } catch {
-        /* keep fallback */
-      }
+    if (!isAiConfigured()) {
+      return { value: "", preview: AI_SUPPORT_MESSAGE };
     }
-    return { value: desc, preview: desc.slice(0, 160) + "..." };
+    try {
+      const desc = await geminiText(
+        "You are a YouTube SEO copywriter. Write a compelling description with a hook, body, CTA, and timestamps.",
+        `Write a description for the video titled: "${video.title}"`
+      );
+      return { value: desc, preview: desc.slice(0, 160) + "..." };
+    } catch {
+      return { value: "", preview: AI_SUPPORT_MESSAGE };
+    }
   }
 
   // tags
-  let tags = ["youtube growth", "content creation", "video editing", "youtube algorithm", "retention"];
-  if (isAiConfigured()) {
-    try {
-      const parsed = await geminiJson<{ tags: string[] }>(
-        'Return JSON {"tags": string[]} with 8 high-intent YouTube tags.',
-        `Tags for the video titled: "${video.title}"`
-      );
-      if (Array.isArray(parsed.tags) && parsed.tags.length) tags = parsed.tags;
-    } catch {
-      /* keep fallback */
-    }
+  if (!isAiConfigured()) {
+    return { value: [], preview: AI_SUPPORT_MESSAGE };
   }
-  return { value: tags, preview: tags.join(", ") };
+  try {
+    const parsed = await geminiJson<{ tags: string[] }>(
+      'Return JSON {"tags": string[]} with 8 high-intent YouTube tags.',
+      `Tags for the video titled: "${video.title}"`
+    );
+    const tags =
+      Array.isArray(parsed.tags) && parsed.tags.length
+        ? parsed.tags
+        : [];
+    if (!tags.length) return { value: [], preview: AI_SUPPORT_MESSAGE };
+    return { value: tags, preview: tags.join(", ") };
+  } catch {
+    return { value: [], preview: AI_SUPPORT_MESSAGE };
+  }
 }
 
 export interface ChatResult {
@@ -176,6 +186,10 @@ export async function chat(
     // Target the most recently published video by default.
     const target = videos[0];
     const { value, preview } = await craftValue(intent.kind, target);
+
+    if (preview === AI_SUPPORT_MESSAGE) {
+      return { content: AI_SUPPORT_MESSAGE };
+    }
 
     const nameMap = {
       title: "update_title",
@@ -214,13 +228,13 @@ export async function chat(
 
   // Conversational answer.
   if (!isAiConfigured()) {
-    return { content: fallbackChat(message, ctx) };
+    return { content: fallbackChat() };
   }
   try {
     const system = `You are TubePath's AI growth coach for the channel "${ctx.channelTitle}". Be concise, specific, and encouraging. Recent context: views change ${ctx.viewsChange.toFixed(0)}%, engagement change ${ctx.engagementChange.toFixed(0)}%, top video "${ctx.topVideoTitle}".`;
     const content = await geminiText(system, message);
     return { content };
   } catch {
-    return { content: fallbackChat(message, ctx) };
+    return { content: fallbackChat() };
   }
 }

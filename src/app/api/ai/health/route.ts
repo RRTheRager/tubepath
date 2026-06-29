@@ -26,7 +26,7 @@ export async function GET() {
   if (!isAiConfigured()) {
     return NextResponse.json({
       ok: false,
-      reason: "GEMINI_API_KEY not set (using canned fallbacks)",
+      reason: "GEMINI_API_KEY not set",
       key: keyInfo,
     });
   }

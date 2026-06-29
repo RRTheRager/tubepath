@@ -5,15 +5,21 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import type { InsightCard, OverviewPayload } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
+import { useActivatePremium } from "@/components/access/useActivatePremium";
 import { PulseHero } from "@/components/feed/PulseHero";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { Loading } from "@/components/ui/Loading";
 import { Button } from "@/components/ui/Button";
+import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
+import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
+import { AI_SUPPORT_MESSAGE } from "@/lib/ai/constants";
 
 export default function FeedPage() {
-  const { data: session, refresh } = useSession();
+  const { data: session } = useSession();
+  const { hasChannel, loading: ytLoading } = useYouTubeLinked();
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
   const [aiInsights, setAiInsights] = useState<InsightCard[] | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -23,33 +29,73 @@ export default function FeedPage() {
     const res = await fetch("/api/overview", { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
-      setOverview(json.overview);
+      if (json.youtubeConnected && json.overview) {
+        setOverview(json.overview);
+      } else {
+        setOverview(null);
+      }
     }
     setLoading(false);
     setRefreshing(false);
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (hasChannel) load();
+    else setLoading(false);
+  }, [hasChannel, load]);
 
   useEffect(() => {
-    if (isFull) {
+    if (isFull && hasChannel) {
       fetch("/api/ai/insights", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
-        .then((j) => j && setAiInsights(j.insights))
-        .catch(() => {});
+        .then((j) => {
+          if (!j) return;
+          setAiInsights(j.insights ?? []);
+          setAiError(j.error ?? null);
+        })
+        .catch(() => setAiError(AI_SUPPORT_MESSAGE));
     }
-  }, [isFull]);
+  }, [isFull, hasChannel]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await load();
   };
 
-  if (loading || !overview) return <Loading label="Loading your pulse" />;
+  if (ytLoading || (hasChannel && loading)) {
+    return <Loading label="Loading your pulse" />;
+  }
 
-  const cards = isFull && aiInsights?.length ? aiInsights : overview.insights;
+  if (!hasChannel) {
+    return <YouTubeConnectPrompt variant="select-channel" />;
+  }
+
+  if (!overview) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
+        <p className="max-w-sm text-sm text-muted-foreground">
+          We couldn&apos;t load your channel data. Try reconnecting Google in
+          Settings.
+        </p>
+      </div>
+    );
+  }
+
+  const cards =
+    isFull && aiInsights?.length
+      ? aiInsights
+      : aiError && isFull
+        ? [
+            {
+              id: "ai-error",
+              tone: "neutral" as const,
+              emoji: "⚠️",
+              headline: "AI unavailable",
+              detail: aiError,
+              ai: false,
+            },
+          ]
+        : overview.insights;
 
   return (
     <div className="space-y-4">
@@ -71,21 +117,13 @@ export default function FeedPage() {
         <FeedCard key={card.id} card={card} index={i} />
       ))}
 
-      {!isFull && <UnlockAiCard onUnlock={refresh} />}
+      {!isFull && <UnlockAiCard />}
     </div>
   );
 }
 
-function UnlockAiCard({ onUnlock }: { onUnlock: () => Promise<void> }) {
-  const [busy, setBusy] = useState(false);
-  const unlock = async () => {
-    setBusy(true);
-    const res = await fetch("/api/billing/activate-now", { method: "POST" });
-    const json = await res.json();
-    if (json.url) window.location.href = json.url;
-    else await onUnlock();
-    setBusy(false);
-  };
+function UnlockAiCard() {
+  const { activate, busy } = useActivatePremium();
 
   return (
     <motion.div
@@ -99,10 +137,10 @@ function UnlockAiCard({ onUnlock }: { onUnlock: () => Promise<void> }) {
       </div>
       <h3 className="text-lg font-semibold">Your AI feed is waiting</h3>
       <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-        These are canned highlights. Premium turns this into a personalized,
-        AI-generated feed that learns what moves your channel.
+        Upgrade to Premium for a personalized, AI-generated feed tuned to your
+        channel.
       </p>
-      <Button className="mt-4" onClick={unlock} disabled={busy}>
+      <Button className="mt-4" onClick={activate} disabled={busy}>
         <Sparkles className="h-4 w-4" /> Unlock AI insights
       </Button>
     </motion.div>

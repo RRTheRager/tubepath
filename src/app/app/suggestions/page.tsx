@@ -11,14 +11,19 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Loading } from "@/components/ui/Loading";
+import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
+import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
+import { AI_SUPPORT_MESSAGE } from "@/lib/ai/constants";
 
 export default function SuggestionsPage() {
   const { data: session, loading } = useSession();
+  const { hasChannel, loading: ytLoading } = useYouTubeLinked();
   const [topic, setTopic] = useState("");
   const [bundle, setBundle] = useState<SuggestionBundle | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (loading) return <Loading />;
+  if (loading || ytLoading) return <Loading />;
 
   if (!session?.capabilities.ai) {
     return (
@@ -35,8 +40,13 @@ export default function SuggestionsPage() {
     );
   }
 
+  if (!hasChannel) {
+    return <YouTubeConnectPrompt variant="select-channel" />;
+  }
+
   const generate = async () => {
     setBusy(true);
+    setError(null);
     try {
       const res = await fetch("/api/ai/suggestions", {
         method: "POST",
@@ -44,7 +54,20 @@ export default function SuggestionsPage() {
         body: JSON.stringify({ topic }),
       });
       const json = await res.json();
+      if (json.error && !json.bundle?.titles?.length) {
+        setError(json.error);
+        setBundle(null);
+        return;
+      }
+      if (json.bundle?.error) {
+        setError(json.bundle.error);
+        setBundle(null);
+        return;
+      }
       setBundle(json.bundle);
+    } catch {
+      setError(AI_SUPPORT_MESSAGE);
+      setBundle(null);
     } finally {
       setBusy(false);
     }
@@ -79,13 +102,13 @@ export default function SuggestionsPage() {
             Generate
           </Button>
         </div>
-        {!session.aiConfigured && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Demo mode: add a Gemini API key for live generation. Showing curated
-            examples for now.
-          </p>
-        )}
       </Card>
+
+      {error && (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       {busy && <Loading label="Generating your pack" />}
 

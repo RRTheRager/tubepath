@@ -69,7 +69,7 @@ export async function GET(req: Request) {
       tokens
     );
 
-    return NextResponse.redirect(`${env.appUrl}/app/settings?connected=1`);
+    return NextResponse.redirect(`${env.appUrl}/app/feed?connected=1`);
   } catch {
     return NextResponse.redirect(
       `${env.appUrl}/app/settings?error=youtube_auth_failed`

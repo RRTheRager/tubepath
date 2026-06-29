@@ -38,7 +38,7 @@ function newAccount(id: string): Account {
   return {
     id,
     email: null,
-    name: "Demo Creator",
+    name: "Creator",
     status: "none",
     trialEnd: null,
     currentPeriodEnd: null,

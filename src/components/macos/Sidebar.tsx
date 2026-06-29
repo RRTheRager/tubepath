@@ -10,7 +10,15 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import { YouTubeAccountPanel } from "@/components/youtube/YouTubeAccountPanel";
 import { cn } from "@/lib/utils";
 
-export function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
+export function Sidebar({
+  onOpenPalette,
+  className,
+  onNavigate,
+}: {
+  onOpenPalette: () => void;
+  className?: string;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const { data } = useSession();
   const { resolved, setMode } = useTheme();
@@ -19,7 +27,12 @@ export function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const trialing = data?.account.status === "trialing";
 
   return (
-    <aside className="vibrancy relative hidden w-60 shrink-0 flex-col border-r border-border/60 md:flex">
+    <aside
+      className={cn(
+        "vibrancy relative flex w-[min(18rem,85vw)] shrink-0 flex-col border-r border-border/60",
+        className
+      )}
+    >
       <div className="flex h-12 items-center gap-3 px-4">
         <TrafficLights />
         <span className="text-sm font-semibold tracking-tight">TubePath</span>
@@ -63,6 +76,7 @@ export function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
             <Link
               key={item.id}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
@@ -79,7 +93,9 @@ export function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
       </nav>
 
       <div className="space-y-3 p-3">
-        {trialing && <TrialMini daysLeft={data?.trialDaysLeft ?? 0} />}
+        {trialing && (
+          <TrialMini daysLeft={data?.trialDaysLeft ?? 0} onNavigate={onNavigate} />
+        )}
 
         <button
           onClick={() => setMode(resolved === "dark" ? "light" : "dark")}
@@ -97,10 +113,17 @@ export function Sidebar({ onOpenPalette }: { onOpenPalette: () => void }) {
   );
 }
 
-function TrialMini({ daysLeft }: { daysLeft: number }) {
+function TrialMini({
+  daysLeft,
+  onNavigate,
+}: {
+  daysLeft: number;
+  onNavigate?: () => void;
+}) {
   return (
     <Link
       href="/app/settings"
+      onClick={onNavigate}
       className="block rounded-lg border border-primary/30 bg-primary/10 p-3 transition-colors hover:bg-primary/15"
     >
       <p className="text-xs font-semibold text-primary">

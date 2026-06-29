@@ -6,20 +6,32 @@ import { Eye, Heart, MessageSquare } from "lucide-react";
 import type { VideoSummary } from "@/lib/types";
 import { Loading } from "@/components/ui/Loading";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
+import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
 import { formatCompact, formatRelativeDate, formatDuration } from "@/lib/utils";
 
 type Sort = "recent" | "views" | "engagement";
 
 export default function VideosPage() {
+  const { hasChannel, loading: ytLoading } = useYouTubeLinked();
   const [videos, setVideos] = useState<VideoSummary[] | null>(null);
   const [sort, setSort] = useState<Sort>("recent");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hasChannel) {
+      setLoading(false);
+      return;
+    }
     fetch("/api/videos", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => j && setVideos(j.videos))
-      .catch(() => {});
-  }, []);
+      .then((j) => {
+        if (j?.youtubeConnected) setVideos(j.videos ?? []);
+        else setVideos(null);
+      })
+      .catch(() => setVideos(null))
+      .finally(() => setLoading(false));
+  }, [hasChannel]);
 
   const sorted = useMemo(() => {
     if (!videos) return [];
@@ -27,12 +39,38 @@ export default function VideosPage() {
     if (sort === "views") copy.sort((a, b) => b.views - a.views);
     else if (sort === "engagement")
       copy.sort((a, b) => b.engagementRate - a.engagementRate);
-    else
-      copy.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+    else copy.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
     return copy;
   }, [videos, sort]);
 
-  if (!videos) return <Loading label="Loading videos" />;
+  if (ytLoading || (hasChannel && loading)) {
+    return <Loading label="Loading videos" />;
+  }
+
+  if (!hasChannel) {
+    return <YouTubeConnectPrompt variant="select-channel" />;
+  }
+
+  if (videos === null) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
+        <p className="max-w-sm text-sm text-muted-foreground">
+          We couldn&apos;t load your videos. Try reconnecting Google in
+          Settings.
+        </p>
+      </div>
+    );
+  }
+
+  if (videos.length === 0) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-muted-foreground">
+          No videos found on this channel yet.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

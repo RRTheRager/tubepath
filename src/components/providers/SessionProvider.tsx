@@ -50,6 +50,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.location.search.includes("connected=1")) return;
+    refresh();
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [refresh]);
+
   return (
     <Ctx.Provider value={{ data, loading, refresh }}>{children}</Ctx.Provider>
   );

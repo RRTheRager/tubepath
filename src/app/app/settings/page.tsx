@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, ExternalLink, RefreshCw, Sparkles, Youtube } from "lucide-react";
 import type { SubscriptionStatus } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
@@ -47,6 +48,7 @@ interface AiHealth {
 
 export default function SettingsPage() {
   const { data, loading, refresh } = useSession();
+  const router = useRouter();
   const { mode, setMode } = useTheme();
   const [busy, setBusy] = useState(false);
   const [ai, setAi] = useState<AiHealth | null>(null);
@@ -86,6 +88,7 @@ export default function SettingsPage() {
         return;
       }
       await refresh();
+      router.refresh();
     } finally {
       setBusy(false);
     }
@@ -105,7 +108,7 @@ export default function SettingsPage() {
           <div>
             <p className="font-medium">{account.name}</p>
             <p className="text-sm text-muted-foreground">
-              {account.email ?? "Demo account"}
+              {account.email ?? "Not signed in with Google"}
             </p>
           </div>
         </div>
@@ -193,7 +196,7 @@ export default function SettingsPage() {
           subtitle={
             account.youtubeConnected
               ? "Switch Google accounts and channels. Managed channels are listed first."
-              : "Connect to replace demo data with your channel"
+              : "Connect your YouTube channel to load real analytics"
           }
         />
         {account.youtubeConnected || (data.googleAccounts?.length ?? 0) > 0 ? (

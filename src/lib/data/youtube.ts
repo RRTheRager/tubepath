@@ -13,7 +13,8 @@ import {
   detectAnomalies,
 } from "@/lib/metrics";
 import type { DataProvider, OverviewOptions } from "./provider";
-import { MockProvider, cannedInsights } from "./mock";
+import { YouTubeDataError } from "./provider";
+import { cannedInsights } from "./mock";
 import {
   analyticsReport,
   dataApi,
@@ -72,12 +73,9 @@ interface VideoListResponse {
 }
 
 /**
- * Real YouTube Data + Analytics provider. Each method attempts live API calls
- * and falls back to mock data on any failure so the app never breaks.
+ * Real YouTube Data + Analytics provider. Surfaces API errors instead of mock data.
  */
 export class YouTubeProvider implements DataProvider {
-  private fallback = new MockProvider();
-
   constructor(
     private account: Account,
     private creds: GoogleCredentials
@@ -169,7 +167,9 @@ export class YouTubeProvider implements DataProvider {
         };
       });
 
-      if (metrics.length === 0) return this.fallback.getOverview(opts);
+      if (metrics.length === 0) {
+        throw new YouTubeDataError("No analytics data returned for this channel");
+      }
 
       // Channel summary for the active channel.
       const chResp = await dataApi<ChannelListResponse>(token, "channels", {
@@ -198,8 +198,9 @@ export class YouTubeProvider implements DataProvider {
       const insights = cannedInsights(snapshot, anomalies);
 
       return { channel, snapshot, metrics, anomalies, pulse, insights };
-    } catch {
-      return this.fallback.getOverview(opts);
+    } catch (err) {
+      if (err instanceof YouTubeDataError) throw err;
+      throw new YouTubeDataError();
     }
   }
 
@@ -226,7 +227,7 @@ export class YouTubeProvider implements DataProvider {
 
       return (vids.items ?? []).map((v) => this.toSummary(v));
     } catch {
-      return this.fallback.getVideos();
+      throw new YouTubeDataError();
     }
   }
 
@@ -276,7 +277,7 @@ export class YouTubeProvider implements DataProvider {
         trafficSources,
       };
     } catch {
-      return this.fallback.getVideo(id);
+      throw new YouTubeDataError();
     }
   }
 
@@ -291,7 +292,7 @@ export class YouTubeProvider implements DataProvider {
         id,
       });
       const v = current.items?.[0];
-      if (!v?.snippet) return this.fallback.updateVideo(id, patch);
+      if (!v?.snippet) return null;
 
       const snippet = {
         title: patch.title ?? v.snippet.title,
@@ -309,7 +310,7 @@ export class YouTubeProvider implements DataProvider {
       const updated = refreshed.items?.[0];
       return updated ? this.toSummary(updated) : null;
     } catch {
-      return this.fallback.updateVideo(id, patch);
+      throw new YouTubeDataError();
     }
   }
 
