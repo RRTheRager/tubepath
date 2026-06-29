@@ -20,9 +20,26 @@ export function GoogleConnectGate({ children }: { children: React.ReactNode }) {
   }
 
   const hasGoogle =
-    (data?.googleAccounts?.length ?? 0) > 0 || data?.account.youtubeConnected;
+    (data?.googleAccounts?.length ?? 0) > 0 || Boolean(data?.account.youtubeConnected);
 
-  if (!data?.youtubeConfigured || hasGoogle) {
+  if (!data) {
+    return (
+      <div className="flex h-[100dvh] items-center justify-center px-6">
+        <p className="text-center text-sm text-muted-foreground">
+          Couldn&apos;t load your session.{" "}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </p>
+      </div>
+    );
+  }
+
+  if (!data.youtubeConfigured || hasGoogle) {
     return children;
   }
 

@@ -13,6 +13,7 @@ export async function POST() {
       await stripe.subscriptions.update(account.stripeSubscriptionId, {
         cancel_at_period_end: false,
       });
+      await resumeSubscription(account.id);
       return NextResponse.json({ ok: true });
     }
   }

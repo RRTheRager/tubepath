@@ -51,6 +51,11 @@ export const isStripeConfigured = () =>
 export const isDbConfigured = () =>
   env.supabase.url.length > 0 && env.supabase.serviceRoleKey.length > 0;
 
+/** Simulated billing (no Stripe) — allowed in dev unless explicitly disabled. */
+export const isDevBillingAllowed = () =>
+  process.env.NODE_ENV !== "production" ||
+  process.env.ENABLE_BILLING_SIMULATOR === "true";
+
 /** Trial length in days, per product spec. */
 export const TRIAL_DAYS = 3;
 /** Grace period (days) after a failed payment before access is revoked. */

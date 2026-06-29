@@ -25,6 +25,7 @@ export interface SessionData {
 interface SessionCtx {
   data: SessionData | null;
   loading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
 }
 
@@ -33,14 +34,27 @@ const Ctx = createContext<SessionCtx | null>(null);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/session", { cache: "no-store" });
+      if (!res.ok) {
+        setData(null);
+        setError("Couldn't load session");
+        return;
+      }
       const json = (await res.json()) as SessionData;
+      if (!json?.account) {
+        setData(null);
+        setError("Invalid session response");
+        return;
+      }
+      setError(null);
       setData(json);
     } catch {
-      /* ignore */
+      setData(null);
+      setError("Couldn't load session");
     } finally {
       setLoading(false);
     }
@@ -58,7 +72,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   return (
-    <Ctx.Provider value={{ data, loading, refresh }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ data, loading, error, refresh }}>{children}</Ctx.Provider>
   );
 }
 

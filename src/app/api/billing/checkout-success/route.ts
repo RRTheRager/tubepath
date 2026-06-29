@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { env, isStripeConfigured } from "@/lib/env";
 import { applyStripeSubscription, getStripe } from "@/lib/billing";
-import { getCurrentAccount, setSessionId } from "@/lib/session";
+import {
+  clearCheckoutIntent,
+  getCheckoutIntent,
+  getCurrentAccount,
+  setSessionId,
+} from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +45,14 @@ export async function GET(req: Request) {
 
     await applyStripeSubscription(accountId, sub);
 
-    // Checkout was started under a different browser session — align the cookie.
     const account = await getCurrentAccount();
-    if (account.id !== accountId) await setSessionId(accountId);
+    if (account.id !== accountId) {
+      const checkoutIntent = await getCheckoutIntent();
+      if (checkoutIntent === accountId) {
+        await setSessionId(accountId);
+      }
+    }
+    await clearCheckoutIntent();
   } catch {
     return redirect("/?error=checkout");
   }

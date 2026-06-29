@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAccount } from "@/lib/session";
-import { isStripeConfigured } from "@/lib/env";
+import { isDevBillingAllowed, isStripeConfigured } from "@/lib/env";
 import { simulateStatus } from "@/lib/store";
 import type { SubscriptionStatus } from "@/lib/types";
 
@@ -18,6 +18,13 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Simulator disabled: real Stripe is configured." },
       { status: 400 }
+    );
+  }
+
+  if (!isDevBillingAllowed()) {
+    return NextResponse.json(
+      { error: "Billing simulator is disabled in production." },
+      { status: 403 }
     );
   }
 
