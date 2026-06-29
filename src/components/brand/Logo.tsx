@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 type LogoProps = {
   /** Full wordmark or icon-only mark */
   variant?: "full" | "icon";
-  /** Render as a link (default `/` for full, `/app/feed` for icon in app) */
   href?: string;
   className?: string;
   priority?: boolean;
 };
 
-const SIZES = {
-  full: { width: 148, height: 38 },
-  icon: { width: 32, height: 32 },
+/** Source PNG dimensions (used for Next.js layout; display size via className). */
+const ASSETS = {
+  icon: { src: "/logo-icon.png", width: 1280, height: 720 },
+  full: { src: "/logo-full.png", width: 1024, height: 1024 },
 } as const;
 
 export function Logo({
@@ -22,41 +22,34 @@ export function Logo({
   className,
   priority = false,
 }: LogoProps) {
-  const { width, height } = SIZES[variant];
-  const iconSrc = "/logo-icon.svg";
-  const fullLight = "/logo-full.svg";
-  const fullDark = "/logo-full-dark.svg";
+  const asset = ASSETS[variant];
 
   const img =
     variant === "icon" ? (
-      <Image
-        src={iconSrc}
-        alt="TubePath"
-        width={width}
-        height={height}
-        priority={priority}
-        className={cn("h-auto w-auto shrink-0", className)}
-      />
-    ) : (
-      <>
+      <span
+        className={cn(
+          "relative inline-block shrink-0 overflow-hidden rounded-md",
+          className
+        )}
+      >
         <Image
-          src={fullLight}
+          src={asset.src}
           alt="TubePath"
-          width={width}
-          height={height}
+          width={asset.width}
+          height={asset.height}
           priority={priority}
-          className={cn("h-auto w-auto shrink-0 dark:hidden", className)}
+          className="h-full w-full object-cover object-left"
         />
-        <Image
-          src={fullDark}
-          alt=""
-          aria-hidden
-          width={width}
-          height={height}
-          priority={priority}
-          className={cn("hidden h-auto w-auto shrink-0 dark:block", className)}
-        />
-      </>
+      </span>
+    ) : (
+      <Image
+        src={asset.src}
+        alt="TubePath"
+        width={asset.width}
+        height={asset.height}
+        priority={priority}
+        className={cn("h-auto w-auto shrink-0 object-contain", className)}
+      />
     );
 
   if (href === undefined) {

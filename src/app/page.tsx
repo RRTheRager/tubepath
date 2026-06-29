@@ -27,7 +27,7 @@ export default async function LandingPage() {
       </div>
 
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <Logo variant="full" href="/" priority className="h-9 w-auto" />
+        <Logo variant="full" href="/" priority className="h-10 w-auto" />
         {hasAccess ? (
           <Link
             href="/app"

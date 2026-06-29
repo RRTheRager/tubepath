@@ -36,7 +36,7 @@ export function Sidebar({
     >
       <div className="flex h-12 items-center gap-2 px-4">
         <TrafficLights />
-        <Logo variant="full" href="/app/feed" className="h-7 w-auto min-w-0" />
+        <Logo variant="full" href="/app/feed" className="h-8 w-auto min-w-0" />
       </div>
 
       <button
