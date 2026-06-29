@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "audit": "node scripts/audit-repo.mjs",
+    "audit:json": "node scripts/audit-repo.mjs --json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
