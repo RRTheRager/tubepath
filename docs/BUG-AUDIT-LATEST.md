@@ -1,13 +1,13 @@
 # TubePath Bug Audit (auto-generated)
 
-> Generated at **2026-06-29T16:04:21.866Z** by `scripts/audit-repo.mjs`.
+> Generated at **2026-06-29T16:04:31.715Z** by `scripts/audit-repo.mjs`.
 > Re-run locally: `node scripts/audit-repo.mjs`
 
 ## Summary
 
 | Severity | Count |
 | --- | ---: |
-| Critical | 5 |
+| Critical | 6 |
 | High | 5 |
 | Medium | 4 |
 | Low | 0 |
@@ -29,6 +29,14 @@ A leaked Stripe session_id lets any browser bind the paying account to their coo
 If Stripe env vars are missing in production, anyone can POST to grant themselves active status.
 
 **Suggested fix:** Require NODE_ENV !== 'production' or explicit ENABLE_BILLING_SIMULATOR=true.
+
+### SEC-006 — Free trial without payment when Stripe is not configured
+
+**Location:** `src/app/api/billing/start-trial/route.ts:17`
+
+Production without Stripe keys allows unlimited anonymous trials via cookie reset.
+
+**Suggested fix:** Fail closed in production when Stripe is not configured.
 
 ### BILL-001 — reconcile() auto-promotes expired trials to active without Stripe
 
