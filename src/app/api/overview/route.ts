@@ -8,6 +8,7 @@ import {
   YouTubeNotConnectedError,
 } from "@/lib/data/provider";
 import { fetchStudioAnalytics } from "@/lib/data/studio-analytics";
+import { detectAnomalies } from "@/lib/metrics";
 
 export async function GET(req: Request) {
   const account = await getCurrentAccount();
@@ -27,9 +28,15 @@ export async function GET(req: Request) {
     const provider = await getDataProvider(account);
     const overview = await provider.getOverview({
       historyDays: caps.historyDays || 30,
+      windowDays: studioDays,
     });
 
     if (!caps.anomalyDetection) overview.anomalies = [];
+    else {
+      overview.anomalies = detectAnomalies(overview.metrics, {
+        windowDays: studioDays,
+      });
+    }
 
     try {
       overview.studio = await fetchStudioAnalytics(account, studioDays);

@@ -5,15 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Loader2, Sparkles } from "lucide-react";
 import type { Anomaly } from "@/lib/types";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { DataNotice } from "@/components/ui/DataNotice";
 
-const PLACEHOLDERS: Anomaly[] = [
-  { date: "2026-06-21", metric: "views", value: 142000, zScore: 2.8, direction: "spike", videoTitle: "I Reverse-Engineered MrBeast's Thumbnails" },
-  { date: "2026-06-14", metric: "engagement", value: 9.2, zScore: 2.3, direction: "spike", videoTitle: "The Hook Formula That Doubled My Retention" },
-  { date: "2026-06-06", metric: "views", value: 21000, zScore: -2.2, direction: "dip" },
-];
-
-export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
-  const rows = anomalies.length ? anomalies : PLACEHOLDERS;
+export function AnomalyList({
+  anomalies,
+  periodDays,
+}: {
+  anomalies: Anomaly[];
+  periodDays?: number;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<Record<string, string>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -44,65 +44,88 @@ export function AnomalyList({ anomalies }: { anomalies: Anomaly[] }) {
     }
   };
 
+  if (!anomalies.length) {
+    return (
+      <Card className="p-6">
+        <CardHeader
+          title="Spikes & anomalies"
+          subtitle={
+            periodDays
+              ? `Last ${periodDays} days · unusual changes in your metrics`
+              : "Unusual changes in your metrics"
+          }
+        />
+        <DataNotice
+          className="py-8"
+          title="No spikes detected"
+          description="Nothing unusual stood out in this period. We'll flag significant view or engagement changes here."
+        />
+      </Card>
+    );
+  }
+
   return (
-    <Card>
+    <Card className="p-6">
       <CardHeader
         title="Spikes & anomalies"
-        subtitle="Unusual days worth a closer look"
+        subtitle={
+          periodDays
+            ? `Last ${periodDays} days · ${anomalies.length} unusual change${anomalies.length === 1 ? "" : "s"}`
+            : `${anomalies.length} unusual change${anomalies.length === 1 ? "" : "s"} in this period`
+        }
       />
       <div className="space-y-2">
-        {rows.map((a) => {
+        {anomalies.map((a) => {
           const id = `${a.metric}-${a.date}`;
-          const up = a.direction === "spike";
+          const open = openId === id;
+          const Icon = a.direction === "spike" ? ArrowUpRight : ArrowDownRight;
+
           return (
             <div key={id} className="rounded-lg border border-border">
               <button
+                type="button"
                 onClick={() => explain(a)}
-                className="flex w-full items-center gap-3 p-3 text-left"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left"
               >
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                    up ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    a.direction === "spike"
+                      ? "bg-success/15 text-success"
+                      : "bg-danger/15 text-danger"
                   }`}
                 >
-                  {up ? (
-                    <ArrowUpRight className="h-5 w-5" />
-                  ) : (
-                    <ArrowDownRight className="h-5 w-5" />
-                  )}
+                  <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium capitalize">
-                    {a.metric} {a.direction} &middot; {a.date}
+                    {a.metric} {a.direction}
                   </p>
-                  {a.videoTitle && (
-                    <p className="truncate text-xs text-muted-foreground">
-                      {a.videoTitle}
-                    </p>
-                  )}
+                  <p className="truncate text-xs text-muted-foreground">
+                    {a.date}
+                    {a.videoTitle ? ` · ${a.videoTitle}` : ""}
+                  </p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {Math.abs(a.zScore)}σ
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  z={a.zScore}
                 </span>
               </button>
-
               <AnimatePresence>
-                {openId === id && (
+                {open && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden border-t border-border"
                   >
-                    <div className="p-3 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2 px-4 py-3 text-sm text-muted-foreground">
                       {loadingId === id ? (
-                        <span className="inline-flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
-                        </span>
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                       ) : (
-                        explanation[id]
+                        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                       )}
+                      <p className="leading-relaxed">
+                        {explanation[id] ?? "Loading explanation…"}
+                      </p>
                     </div>
                   </motion.div>
                 )}

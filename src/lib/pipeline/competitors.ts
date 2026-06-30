@@ -83,7 +83,10 @@ export async function discoverCompetitors(
     byChannel.set(channelId, entry);
   }
 
-  const candidateIds = [...byChannel.keys()].slice(0, 12);
+  const candidateIds = [...byChannel.entries()]
+    .sort((a, b) => b[1].score - a[1].score)
+    .slice(0, 12)
+    .map(([id]) => id);
   if (!candidateIds.length) return [];
 
   const channels = await dataApi<ChannelListResponse>(token, "channels", {
@@ -96,7 +99,7 @@ export async function discoverCompetitors(
 
   for (const ch of channels.items ?? []) {
     const subs = num(ch.statistics?.subscriberCount);
-    if (subs < min || subs > max) continue;
+    if (subs > 0 && (subs < min || subs > max)) continue;
     const meta = byChannel.get(ch.id);
     if (!meta) continue;
     ranked.push({
@@ -109,8 +112,22 @@ export async function discoverCompetitors(
     });
   }
 
-  ranked.sort((a, b) => b.matchScore - a.matchScore);
+  ranked.sort((a, b) => {
+    if (a.subscriberCount === 0 && b.subscriberCount > 0) return 1;
+    if (b.subscriberCount === 0 && a.subscriberCount > 0) return -1;
+    return b.matchScore - a.matchScore;
+  });
   return ranked.slice(0, PIPELINE_MAX_COMPETITORS);
+}
+
+function titleMatchesTopic(title: string, topic: string): boolean {
+  const words = topic
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2);
+  if (!words.length) return true;
+  const t = title.toLowerCase();
+  return words.some((w) => t.includes(w));
 }
 
 export async function fetchCompetitorVideos(
@@ -161,15 +178,10 @@ export async function fetchCompetitorVideos(
       id: ids.join(","),
     });
 
+    const batch: typeof out = [];
     for (const v of vids.items ?? []) {
       const title = v.snippet?.title ?? "Untitled";
-      if (
-        topic.length > 2 &&
-        !title.toLowerCase().includes(topic.split(" ")[0].toLowerCase())
-      ) {
-        continue;
-      }
-      out.push({
+      batch.push({
         id: v.id,
         title,
         channelId: comp.id,
@@ -181,6 +193,12 @@ export async function fetchCompetitorVideos(
         comments: num(v.statistics?.commentCount),
       });
     }
+
+    const filtered =
+      topic.length > 2
+        ? batch.filter((v) => titleMatchesTopic(v.title, topic))
+        : batch;
+    out.push(...(filtered.length ? filtered : batch));
   }
 
   return out;

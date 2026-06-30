@@ -6,7 +6,6 @@ import type { DailyMetric, MetricKey, OverviewPayload } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { DataNotice } from "@/components/ui/DataNotice";
 import { MetricChart, type ChartPoint } from "@/components/charts/MetricChart";
 import { UpgradeTeaser } from "@/components/access/UpgradeTeaser";
 import { Loading } from "@/components/ui/Loading";
@@ -111,10 +110,40 @@ export default function DashboardPage() {
           <StudioAnalyticsPanel studio={studio} tab={studioTab} />
         </div>
       ) : (
-        <DataNotice
-          title="Studio metrics unavailable"
-          description="We couldn't load detailed analytics from YouTube for this period. Your charts below may still show daily trends — try refreshing or reconnecting your channel in Settings."
-        />
+        <p className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          Detailed studio breakdowns couldn&apos;t load, but your charts below
+          still reflect your channel data.
+        </p>
+      )}
+
+      {(overview.snapshot.engagementRateLong > 0 ||
+        overview.snapshot.engagementRateShorts > 0) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="surface-stat px-5 py-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Long-form engagement
+            </p>
+            <p className="mt-2 text-2xl font-medium tabular-nums">
+              {overview.snapshot.engagementRateLong.toFixed(2)}%
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Videos over 60 seconds · likes + comments ÷ views
+            </p>
+          </div>
+          <div className="surface-stat px-5 py-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Shorts engagement
+            </p>
+            <p className="mt-2 text-2xl font-medium tabular-nums">
+              {overview.snapshot.engagementRateShorts > 0
+                ? `${overview.snapshot.engagementRateShorts.toFixed(2)}%`
+                : "—"}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Shorts (≤60s) · separate from long-form rate
+            </p>
+          </div>
+        </div>
       )}
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -166,7 +195,7 @@ export default function DashboardPage() {
         description="Premium flags unusual spikes and dips in your metrics."
         minHeight={160}
       >
-        <AnomalyList anomalies={overview.anomalies} />
+        <AnomalyList anomalies={overview.anomalies} periodDays={days} />
       </UpgradeTeaser>
     </div>
   );

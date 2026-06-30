@@ -2,6 +2,7 @@ import type { Account, StudioAnalytics, StudioBreakdownRow, StudioRevenue } from
 import { getAccessToken, analyticsReport, isoDaysAgo, isoToday } from "./youtube-client";
 import { analyticsIds, requireChannelId } from "@/lib/youtube/channels";
 import { getCredentials } from "@/lib/store";
+import type { BreakdownFetchStatus } from "@/lib/types";
 
 function colIndex(headers: { name: string }[], name: string): number {
   return headers.findIndex((c) => c.name === name);
@@ -89,6 +90,11 @@ function breakdownFromReport(
   });
 }
 
+function breakdownStatus(rows: StudioBreakdownRow[], error: boolean): BreakdownFetchStatus {
+  if (error) return "error";
+  return rows.length ? "ok" : "empty";
+}
+
 export async function fetchStudioAnalytics(
   account: Account,
   periodDays = 28
@@ -120,8 +126,11 @@ export async function fetchStudioAnalytics(
 
   let revenue: StudioRevenue | null = null;
   let monetized = false;
+  let revenueStatus: BreakdownFetchStatus = "empty";
+
   try {
     const rev = await revenueReport(token, ids, startDate, endDate);
+    revenueStatus = "ok";
     const rrow = rev.rows?.[0] ?? [];
     const eri = colIndex(rev.columnHeaders, "estimatedRevenue");
     const eari = colIndex(rev.columnHeaders, "estimatedAdRevenue");
@@ -129,23 +138,24 @@ export async function fetchStudioAnalytics(
     const estRev = num(rrow[eri]);
     const adRev = num(rrow[eari]);
     const cpm = num(rrow[cpmi]);
-    if (estRev > 0 || adRev > 0 || cpm > 0) {
-      monetized = true;
-      const views = num(row[vi]);
-      revenue = {
-        estimatedRevenue: estRev,
-        estimatedAdRevenue: adRev,
-        playbackCpm: cpm,
-        rpm: views > 0 ? (estRev / views) * 1000 : 0,
-      };
-    }
+    const views = num(row[vi]);
+    monetized = true;
+    revenue = {
+      estimatedRevenue: estRev,
+      estimatedAdRevenue: adRev,
+      playbackCpm: cpm,
+      rpm: views > 0 ? (estRev / views) * 1000 : 0,
+    };
   } catch {
-    /* not monetized or revenue unavailable */
+    revenueStatus = "error";
   }
 
   let trafficSources: StudioBreakdownRow[] = [];
   let devices: StudioBreakdownRow[] = [];
   let countries: StudioBreakdownRow[] = [];
+  let trafficError = false;
+  let devicesError = false;
+  let countriesError = false;
 
   try {
     const traffic = await analyticsReport(token, {
@@ -163,7 +173,7 @@ export async function fetchStudioAnalytics(
       friendlyTraffic
     );
   } catch {
-    /* optional */
+    trafficError = true;
   }
 
   try {
@@ -178,7 +188,7 @@ export async function fetchStudioAnalytics(
     });
     devices = breakdownFromReport(device, "deviceType", friendlyDevice);
   } catch {
-    /* optional */
+    devicesError = true;
   }
 
   try {
@@ -193,12 +203,18 @@ export async function fetchStudioAnalytics(
     });
     countries = breakdownFromReport(country, "country", (c) => c);
   } catch {
-    /* optional */
+    countriesError = true;
   }
 
   return {
     periodDays: days,
     monetized,
+    breakdownStatus: {
+      traffic: breakdownStatus(trafficSources, trafficError),
+      devices: breakdownStatus(devices, devicesError),
+      countries: breakdownStatus(countries, countriesError),
+      revenue: revenueStatus,
+    },
     totals: {
       views: num(row[vi]),
       impressions: num(row[ii]),

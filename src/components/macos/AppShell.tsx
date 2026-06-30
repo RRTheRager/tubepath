@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               setPaletteOpen(true);
             }}
             onNavigate={() => setMenuOpen(false)}
-            className="fixed inset-y-0 left-0 z-50 shadow-mac-lg md:hidden"
+            className="fixed inset-y-0 left-0 z-50 shadow-app-lg md:hidden"
           />
         </>
       )}

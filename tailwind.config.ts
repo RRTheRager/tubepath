@@ -40,8 +40,8 @@ const config: Config = {
         ],
       },
       boxShadow: {
-        mac: "0 1px 2px hsl(220 40% 2% / 0.06), 0 8px 30px hsl(220 40% 2% / 0.12)",
-        "mac-lg": "0 4px 8px hsl(220 40% 2% / 0.08), 0 24px 60px hsl(220 40% 2% / 0.24)",
+        app: "0 1px 2px hsl(0 0% 0% / 0.06), 0 8px 30px hsl(0 0% 0% / 0.12)",
+        "app-lg": "0 4px 8px hsl(0 0% 0% / 0.08), 0 24px 60px hsl(0 0% 0% / 0.24)",
         glow: "0 0 0 1px hsl(var(--primary) / 0.4), 0 8px 24px hsl(var(--primary) / 0.25)",
       },
       backdropBlur: {

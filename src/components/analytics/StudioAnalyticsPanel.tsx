@@ -1,6 +1,6 @@
 "use client";
 
-import type { StudioAnalytics, StudioBreakdownRow } from "@/lib/types";
+import type { BreakdownFetchStatus, StudioAnalytics, StudioBreakdownRow } from "@/lib/types";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { DataNotice } from "@/components/ui/DataNotice";
 import { formatCompact, formatDuration } from "@/lib/utils";
@@ -9,16 +9,34 @@ function periodLabel(days: number) {
   return `the last ${days} day${days === 1 ? "" : "s"}`;
 }
 
-function BreakdownList({ rows, title }: { rows: StudioBreakdownRow[]; title: string }) {
+function BreakdownList({
+  rows,
+  title,
+  status = "ok",
+}: {
+  rows: StudioBreakdownRow[];
+  title: string;
+  status?: BreakdownFetchStatus;
+}) {
+  if (status === "error") {
+    return (
+      <Card className="p-6">
+        <CardHeader title={title} />
+        <p className="text-sm text-muted-foreground">
+          This breakdown couldn&apos;t be loaded from YouTube right now. Your
+          headline metrics above are still accurate.
+        </p>
+      </Card>
+    );
+  }
+
   if (!rows.length) {
     return (
       <Card className="p-6">
         <CardHeader title={title} />
-        <DataNotice
-          className="py-8"
-          title="Not enough data yet"
-          description={`YouTube hasn't returned ${title.toLowerCase()} breakdowns for this period. Check back after more views accumulate, or try a longer date range.`}
-        />
+        <p className="text-sm text-muted-foreground">
+          No {title.toLowerCase()} data for this period yet.
+        </p>
       </Card>
     );
   }
@@ -132,28 +150,19 @@ export function StudioAnalyticsPanel({
             unavailable={ctrUnavailable}
           />
         </div>
-        <BreakdownList rows={studio.trafficSources} title="Traffic sources" />
+        <BreakdownList
+          rows={studio.trafficSources}
+          title="Traffic sources"
+          status={studio.breakdownStatus?.traffic}
+        />
       </div>
     );
   }
 
   if (tab === "engagement") {
-    const noEngagementSignals =
-      !noActivity &&
-      t.watchTimeHours === 0 &&
-      t.likes === 0 &&
-      t.comments === 0 &&
-      t.shares === 0;
-
     return (
       <div className="space-y-4">
         <PeriodBanner days={studio.periodDays} views={t.views} />
-        {noEngagementSignals && (
-          <DataNotice
-            title="Limited engagement data"
-            description={`Views were recorded in ${periodLabel(studio.periodDays)}, but YouTube hasn't reported watch time or interactions yet. This can lag by a day or two.`}
-          />
-        )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricTile
             label="Watch time (hours)"
@@ -163,20 +172,16 @@ export function StudioAnalyticsPanel({
           <MetricTile
             label="Average view duration"
             value={
-              noActivity || t.avgViewDurationSeconds === 0
-                ? "—"
-                : formatDuration(t.avgViewDurationSeconds)
+              noActivity ? "—" : formatDuration(t.avgViewDurationSeconds)
             }
-            unavailable={noActivity || t.avgViewDurationSeconds === 0}
+            unavailable={noActivity}
           />
           <MetricTile
             label="Average percentage viewed"
             value={
-              noActivity || t.avgViewPercentage === 0
-                ? "—"
-                : `${t.avgViewPercentage.toFixed(1)}%`
+              noActivity ? "—" : `${t.avgViewPercentage.toFixed(1)}%`
             }
-            unavailable={noActivity || t.avgViewPercentage === 0}
+            unavailable={noActivity}
           />
           <MetricTile
             label="Likes"
@@ -200,18 +205,10 @@ export function StudioAnalyticsPanel({
 
   if (tab === "audience") {
     const netSubs = t.subscribersGained - t.subscribersLost;
-    const noSubData =
-      !noActivity && t.subscribersGained === 0 && t.subscribersLost === 0;
 
     return (
       <div className="space-y-4">
         <PeriodBanner days={studio.periodDays} views={t.views} />
-        {noSubData && (
-          <DataNotice
-            title="No subscriber changes reported"
-            description={`YouTube didn't report subscriber gains or losses in ${periodLabel(studio.periodDays)}. Small channels sometimes see gaps until more activity builds up.`}
-          />
-        )}
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
             <MetricTile
@@ -230,15 +227,23 @@ export function StudioAnalyticsPanel({
               unavailable={noActivity}
             />
           </div>
-          <BreakdownList rows={studio.devices} title="How viewers find you — devices" />
-          <BreakdownList rows={studio.countries} title="Top geographies" />
+          <BreakdownList
+            rows={studio.devices}
+            title="How viewers find you — devices"
+            status={studio.breakdownStatus?.devices}
+          />
+          <BreakdownList
+            rows={studio.countries}
+            title="Top geographies"
+            status={studio.breakdownStatus?.countries}
+          />
         </div>
       </div>
     );
   }
 
   if (tab === "revenue") {
-    if (!studio.monetized || !studio.revenue) {
+    if (!studio.monetized || studio.breakdownStatus?.revenue === "error") {
       return (
         <Card className="p-8">
           <DataNotice
@@ -249,32 +254,19 @@ export function StudioAnalyticsPanel({
         </Card>
       );
     }
-    const r = studio.revenue;
-    const noRevenue = r.estimatedRevenue === 0 && r.estimatedAdRevenue === 0;
-
+    const r = studio.revenue!;
     return (
-      <div className="space-y-4">
-        {noRevenue && (
-          <DataNotice
-            title="No earnings in this period"
-            description={`Your channel is monetized, but YouTube reported $0.00 in ${periodLabel(studio.periodDays)}. Earnings can lag and vary with views, RPM, and ad fill.`}
-          />
-        )}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricTile label="Estimated revenue" value={`$${r.estimatedRevenue.toFixed(2)}`} />
-          <MetricTile label="Estimated ad revenue" value={`$${r.estimatedAdRevenue.toFixed(2)}`} />
-          <MetricTile
-            label="RPM"
-            value={r.rpm > 0 ? `$${r.rpm.toFixed(2)}` : "—"}
-            hint={r.rpm <= 0 ? "RPM needs revenue and views in the same period." : undefined}
-            unavailable={r.rpm <= 0}
-          />
-          <MetricTile
-            label="Playback-based CPM"
-            value={r.playbackCpm > 0 ? `$${r.playbackCpm.toFixed(2)}` : "—"}
-            unavailable={r.playbackCpm <= 0}
-          />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricTile label="Estimated revenue" value={`$${r.estimatedRevenue.toFixed(2)}`} />
+        <MetricTile label="Estimated ad revenue" value={`$${r.estimatedAdRevenue.toFixed(2)}`} />
+        <MetricTile
+          label="RPM"
+          value={r.rpm > 0 ? `$${r.rpm.toFixed(2)}` : "$0.00"}
+        />
+        <MetricTile
+          label="Playback-based CPM"
+          value={r.playbackCpm > 0 ? `$${r.playbackCpm.toFixed(2)}` : "$0.00"}
+        />
       </div>
     );
   }

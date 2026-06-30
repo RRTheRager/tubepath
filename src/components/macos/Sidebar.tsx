@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Lock, Moon, Search, Sun, Flame } from "lucide-react";
 import { NAV } from "./nav";
-import { TrafficLights } from "./TrafficLights";
 import { useSession } from "@/components/providers/SessionProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { YouTubeAccountPanel } from "@/components/youtube/YouTubeAccountPanel";
@@ -33,8 +32,10 @@ export function Sidebar({
         className
       )}
     >
-      <div className="flex h-12 items-center gap-3 px-4">
-        <TrafficLights />
+      <div className="flex h-12 items-center gap-2 px-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+          T
+        </div>
         <span className="text-sm font-semibold tracking-tight">TubePath</span>
       </div>
 
@@ -45,7 +46,7 @@ export function Sidebar({
         <Search className="h-4 w-4" />
         <span className="flex-1 text-left">Search</span>
         <kbd className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-          ⌘K
+          Ctrl+K
         </kbd>
       </button>
 

@@ -6,6 +6,19 @@ import type {
   MetricSnapshot,
 } from "./types";
 
+export const SHORTS_MAX_SECONDS = 60;
+
+export interface EngagementBucket {
+  views: number;
+  likes: number;
+  comments: number;
+}
+
+export interface EngagementSplit {
+  long: EngagementBucket;
+  shorts: EngagementBucket;
+}
+
 function sum(arr: number[]): number {
   return arr.reduce((a, b) => a + b, 0);
 }
@@ -25,26 +38,64 @@ function pctChange(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
+export function computeEngagementRate(
+  likes: number,
+  comments: number,
+  views: number
+): number {
+  if (views <= 0) return 0;
+  return Number((((likes + comments) / views) * 100).toFixed(2));
+}
+
+function aggWindow(m: DailyMetric[]) {
+  const views = sum(m.map((d) => d.views));
+  const likes = sum(m.map((d) => d.likes));
+  const comments = sum(m.map((d) => d.comments));
+  const impressions = sum(m.map((d) => d.impressions));
+  const ctrWeighted =
+    impressions > 0
+      ? sum(m.map((d) => d.ctr * d.impressions)) / impressions
+      : mean(m.map((d) => d.ctr));
+
+  return {
+    views,
+    subscribers: sum(m.map((d) => d.subscribersGained - d.subscribersLost)),
+    likes,
+    comments,
+    watchTimeHours: sum(m.map((d) => d.watchTimeHours)),
+    ctr: Number(ctrWeighted.toFixed(2)),
+    engagementRate: computeEngagementRate(likes, comments, views),
+  };
+}
+
+function bucketRate(bucket: EngagementBucket): number {
+  return computeEngagementRate(bucket.likes, bucket.comments, bucket.views);
+}
+
 /** Build a snapshot comparing the most recent window vs the prior window. */
 export function computeSnapshot(
   metrics: DailyMetric[],
-  windowDays = 28
+  windowDays = 28,
+  split?: EngagementSplit,
+  priorSplit?: EngagementSplit
 ): MetricSnapshot {
   const recent = metrics.slice(-windowDays);
   const prior = metrics.slice(-windowDays * 2, -windowDays);
 
-  const agg = (m: DailyMetric[]) => ({
-    views: sum(m.map((d) => d.views)),
-    subscribers: sum(m.map((d) => d.subscribersGained - d.subscribersLost)),
-    likes: sum(m.map((d) => d.likes)),
-    comments: sum(m.map((d) => d.comments)),
-    watchTimeHours: sum(m.map((d) => d.watchTimeHours)),
-    ctr: mean(m.map((d) => d.ctr)),
-    engagementRate: mean(m.map((d) => d.engagementRate)),
-  });
+  const r = aggWindow(recent);
+  const p = aggWindow(prior.length ? prior : recent);
 
-  const r = agg(recent);
-  const p = agg(prior.length ? prior : recent);
+  const engagementRateLong = split
+    ? bucketRate(split.long)
+    : r.engagementRate;
+  const engagementRateShorts = split
+    ? bucketRate(split.shorts)
+    : 0;
+
+  const prevLong = priorSplit
+    ? bucketRate(priorSplit.long)
+    : p.engagementRate;
+  const prevShorts = priorSplit ? bucketRate(priorSplit.shorts) : 0;
 
   const periodChange: Partial<Record<MetricKey, number>> = {
     views: pctChange(r.views, p.views),
@@ -56,50 +107,73 @@ export function computeSnapshot(
     engagement: pctChange(r.engagementRate, p.engagementRate),
   };
 
-  return { ...r, periodChange };
+  return {
+    ...r,
+    engagementRateLong,
+    engagementRateShorts,
+    engagementLongChange: split
+      ? pctChange(engagementRateLong, prevLong)
+      : undefined,
+    engagementShortsChange:
+      split && priorSplit
+        ? pctChange(engagementRateShorts, prevShorts)
+        : undefined,
+    periodChange,
+  };
 }
-
-const METRIC_FROM_DAILY: Record<
-  "views" | "engagement" | "likes" | "comments",
-  (d: DailyMetric) => number
-> = {
-  views: (d) => d.views,
-  engagement: (d) => d.engagementRate,
-  likes: (d) => d.likes,
-  comments: (d) => d.comments,
-};
 
 /** z-score based spike / dip detection on a few key metrics. */
 export function detectAnomalies(
   metrics: DailyMetric[],
-  threshold = 2.1
+  opts?: { windowDays?: number; threshold?: number; maxResults?: number }
 ): Anomaly[] {
-  const anomalies: Anomaly[] = [];
-  const keys = Object.keys(METRIC_FROM_DAILY) as Array<
-    keyof typeof METRIC_FROM_DAILY
-  >;
+  const windowDays = opts?.windowDays ?? metrics.length;
+  const threshold = opts?.threshold ?? 2.5;
+  const maxResults = opts?.maxResults ?? 5;
+  const window = metrics.slice(-windowDays);
 
-  for (const key of keys) {
-    const series = metrics.map(METRIC_FROM_DAILY[key]);
+  if (window.length < 14) return [];
+
+  const anomalies: Anomaly[] = [];
+
+  const detectSeries = (
+    key: MetricKey,
+    series: number[],
+    dates: string[]
+  ) => {
     const m = mean(series);
     const sd = stddev(series);
-    if (sd === 0) continue;
+    if (sd === 0) return;
 
-    metrics.forEach((day, i) => {
-      const z = (series[i] - m) / sd;
+    series.forEach((val, i) => {
+      const z = (val - m) / sd;
       if (Math.abs(z) >= threshold) {
         anomalies.push({
-          date: day.date,
-          metric: key as MetricKey,
-          value: series[i],
+          date: dates[i],
+          metric: key,
+          value: val,
           zScore: Number(z.toFixed(2)),
           direction: z > 0 ? "spike" : "dip",
         });
       }
     });
-  }
+  };
 
-  return anomalies.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
+  const dates = window.map((d) => d.date);
+  detectSeries(
+    "views",
+    window.map((d) => d.views),
+    dates
+  );
+
+  const pooledRates = window.map((d) =>
+    computeEngagementRate(d.likes, d.comments, d.views)
+  );
+  detectSeries("engagement", pooledRates, dates);
+
+  return anomalies
+    .sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore))
+    .slice(0, maxResults);
 }
 
 export function computePulse(metrics: DailyMetric[], streak: number): DailyPulse {
@@ -107,10 +181,7 @@ export function computePulse(metrics: DailyMetric[], streak: number): DailyPulse
   const yesterday = metrics[metrics.length - 2] ?? today;
 
   const viewsDelta = pctChange(today.views, yesterday.views);
-  const engagementDelta = pctChange(
-    today.engagementRate,
-    yesterday.engagementRate
-  );
+  const engagementDelta = today.engagementRate - yesterday.engagementRate;
   const subscribersDelta =
     today.subscribersGained - today.subscribersLost;
 
@@ -119,9 +190,9 @@ export function computePulse(metrics: DailyMetric[], streak: number): DailyPulse
 
   const headline =
     tone === "positive"
-      ? `You're up ${viewsDelta.toFixed(0)}% in views today. Momentum is real.`
+      ? `Views up ${viewsDelta.toFixed(0)}% vs yesterday.`
       : tone === "negative"
-        ? `Views dipped ${Math.abs(viewsDelta).toFixed(0)}% today. Let's fix it.`
+        ? `Views down ${Math.abs(viewsDelta).toFixed(0)}% vs yesterday.`
         : `Steady day. ${subscribersDelta >= 0 ? "+" : ""}${subscribersDelta} subscribers.`;
 
   return {

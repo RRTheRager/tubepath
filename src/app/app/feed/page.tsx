@@ -140,7 +140,7 @@ function UnlockAiCard() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="mac-card border-primary/30 bg-gradient-to-br from-primary/10 to-transparent text-center"
+      className="app-card border-primary/30 bg-gradient-to-br from-primary/10 to-transparent text-center"
     >
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
         <Sparkles className="h-6 w-6" />

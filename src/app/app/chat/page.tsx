@@ -174,7 +174,7 @@ export default function ChatPage() {
                 "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
                 m.role === "user"
                   ? "bg-primary text-primary-foreground"
-                  : "mac-card"
+                  : "app-card"
               )}
             >
               <p className="whitespace-pre-line leading-relaxed">{m.content}</p>
@@ -225,7 +225,7 @@ export default function ChatPage() {
               exit={{ opacity: 0 }}
               className="flex justify-start"
             >
-              <div className="mac-card flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+              <div className="app-card flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
                 <span className="flex gap-1">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />

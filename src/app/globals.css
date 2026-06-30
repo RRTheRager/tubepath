@@ -81,6 +81,7 @@
     -webkit-backdrop-filter: saturate(180%) blur(24px);
   }
 
+  .app-card,
   .mac-card {
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
@@ -92,6 +93,7 @@
   }
 
   @media (hover: hover) {
+    .app-card-hover:hover,
     .mac-card-hover:hover {
       box-shadow:
         0 2px 4px hsl(220 40% 2% / 0.06),

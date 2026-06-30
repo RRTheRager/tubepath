@@ -6,9 +6,11 @@ import { generateAnalyticsBrief } from "@/lib/ai/analytics";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   const account = await getCurrentAccount();
   const caps = capabilitiesFor(account.status);
+  const daysParam = new URL(req.url).searchParams.get("days");
+  const windowDays = daysParam ? Number(daysParam) : 28;
 
   if (!caps.canEnterApp) {
     return NextResponse.json({ error: "No active subscription" }, { status: 403 });
@@ -21,7 +23,7 @@ export async function GET() {
     );
   }
 
-  const ctx = await buildRichAnalyticsContext(account);
+  const ctx = await buildRichAnalyticsContext(account, windowDays);
 
   if (!ctx.youtubeConnected) {
     return NextResponse.json({ youtubeConnected: false });
@@ -36,7 +38,9 @@ export async function GET() {
         topic: ctx.topic,
         thinData: ctx.thinData,
         dataDays: ctx.dataDays,
+        windowDays: ctx.windowDays,
         facts: ctx.facts,
+        comparisons: ctx.comparisons,
         competitors: ctx.competitors,
         dominantPattern: ctx.dominantPattern,
       },

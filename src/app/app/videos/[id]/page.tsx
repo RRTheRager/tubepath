@@ -75,6 +75,12 @@ export default function VideoDetailPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {formatRelativeDate(video.publishedAt)} &middot;{" "}
             {formatDuration(video.durationSeconds)}
+            {video.isShort && (
+              <>
+                {" "}
+                &middot; <Badge tone="primary">Short</Badge>
+              </>
+            )}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {video.tags.map((t) => (
@@ -86,7 +92,7 @@ export default function VideoDetailPage() {
 
       <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
         {stats.map((s) => (
-          <div key={s.label} className="mac-card p-3 text-center">
+          <div key={s.label} className="app-card p-3 text-center">
             <p className="text-lg font-bold tabular-nums">{s.value}</p>
             <p className="text-[11px] text-muted-foreground">{s.label}</p>
           </div>

@@ -12,7 +12,6 @@ import { getCurrentAccount } from "@/lib/session";
 import { capabilitiesFor } from "@/lib/access";
 import { PREMIUM_PRICE_LABEL } from "@/lib/env";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
-import { TrafficLights } from "@/components/macos/TrafficLights";
 
 export default async function LandingPage() {
   const account = await getCurrentAccount();
@@ -88,11 +87,10 @@ export default async function LandingPage() {
 
           {/* App window mock */}
           <div className="mx-auto mt-16 max-w-4xl">
-            <div className="mac-card overflow-hidden p-0 shadow-mac-lg">
-              <div className="flex h-10 items-center gap-3 border-b border-border bg-card/80 px-4">
-                <TrafficLights />
-                <span className="text-xs text-muted-foreground">
-                  TubePath &mdash; Insights
+            <div className="app-card overflow-hidden p-0 shadow-app-lg">
+              <div className="border-b border-border bg-card/80 px-4 py-3">
+                <span className="text-xs font-medium text-muted-foreground">
+                  TubePath — Insights
                 </span>
               </div>
               <div className="grid gap-4 p-6 md:grid-cols-3">
@@ -140,7 +138,7 @@ export default async function LandingPage() {
               body: "Ask why views dropped, then let the chatbot rewrite your title, draft a description, or generate tags - with one tap to apply.",
             },
           ].map((f) => (
-            <div key={f.title} className="mac-card">
+            <div key={f.title} className="app-card">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/12 text-primary">
                 <f.icon className="h-5 w-5" />
               </div>
@@ -153,7 +151,7 @@ export default async function LandingPage() {
         {/* Pricing */}
         <section id="pricing" className="pb-28">
           <div className="mx-auto max-w-md">
-            <div className="mac-card relative overflow-hidden shadow-mac-lg">
+            <div className="app-card relative overflow-hidden shadow-app-lg">
               <div className="absolute right-4 top-4">
                 <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
                   3-day free trial

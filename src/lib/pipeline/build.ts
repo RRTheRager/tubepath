@@ -227,10 +227,6 @@ export async function buildPipeline(
     throw new Error("YouTube not connected");
   }
 
-  const cacheKey = `${account.id}:${opts.teaser ? "t" : "f"}`;
-  const hit = cache.get(cacheKey);
-  if (hit && hit.expires > Date.now()) return hit.value;
-
   const creds = await getCredentials(account.id);
   if (!creds?.refreshToken) throw new Error("YouTube not connected");
 
@@ -248,14 +244,39 @@ export async function buildPipeline(
   const titles = ownVideosRaw.map((v) => v.title);
   const topic = extractTopicFromTitles(titles);
 
-  const competitors = await discoverCompetitors(
-    token,
-    channelId,
-    subscriberCount,
-    topic
-  );
+  const cacheKey = `${account.id}:${channelId}:${topic}:${opts.teaser ? "t" : "f"}`;
+  const hit = cache.get(cacheKey);
+  if (hit && hit.expires > Date.now()) {
+    if (hit.value.competitors.length > 0 || !hit.value.competitorError) {
+      return hit.value;
+    }
+  }
 
-  const compRaw = await fetchCompetitorVideos(token, competitors, topic);
+  let competitors: Awaited<ReturnType<typeof discoverCompetitors>> = [];
+  let competitorError: string | undefined;
+  let compRaw: Awaited<ReturnType<typeof fetchCompetitorVideos>> = [];
+
+  try {
+    competitors = await discoverCompetitors(
+      token,
+      channelId,
+      subscriberCount,
+      topic
+    );
+    if (!competitors.length) {
+      competitorError =
+        "No similar channels found in your subscriber range for this topic. Try uploading more videos so we can detect your niche.";
+    } else {
+      compRaw = await fetchCompetitorVideos(token, competitors, topic);
+    }
+  } catch (err) {
+    competitorError =
+      err instanceof Error
+        ? err.message.includes("403") || err.message.includes("quota")
+          ? "YouTube API quota limit reached. Competitor tracking will retry later."
+          : "Could not load competitors right now. Other pipeline data is still available."
+        : "Could not load competitors right now.";
+  }
   const compViews = compRaw.map((v) => v.views);
   const medianComp =
     compViews.length > 0
@@ -308,9 +329,14 @@ export async function buildPipeline(
   const payload: PipelinePayload = {
     ...partial,
     advice,
+    competitorError,
     generatedAt: new Date().toISOString(),
   };
 
-  cache.set(cacheKey, { value: payload, expires: Date.now() + PIPELINE_CACHE_TTL_MS });
+  const ttl =
+    competitors.length > 0
+      ? PIPELINE_CACHE_TTL_MS
+      : 5 * 60 * 1000;
+  cache.set(cacheKey, { value: payload, expires: Date.now() + ttl });
   return payload;
 }

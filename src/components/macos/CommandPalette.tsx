@@ -73,7 +73,7 @@ export function CommandPalette({
             onClick={onClose}
           />
           <motion.div
-            className="vibrancy-strong relative w-full max-w-lg overflow-hidden rounded-xl border border-border shadow-mac-lg"
+            className="vibrancy-strong relative w-full max-w-lg overflow-hidden rounded-xl border border-border shadow-app-lg"
             initial={{ opacity: 0, scale: 0.97, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: -8 }}

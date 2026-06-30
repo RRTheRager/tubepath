@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LineChart, Sparkles, TrendingUp } from "lucide-react";
+import { LineChart, Sparkles } from "lucide-react";
 import type { OverviewPayload } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
 import { PremiumGate } from "@/components/access/PremiumGate";
@@ -32,7 +32,6 @@ interface AnalyticsResponse {
     headline: string;
     paragraphs: string[];
     comparisons: { label: string; detail: string; source: string }[];
-    citations: string[];
     thinDataWarning?: string;
   };
   ctx?: {
@@ -41,6 +40,7 @@ interface AnalyticsResponse {
     thinData: boolean;
     dataDays: number;
     facts: AnalyticsFact[];
+    comparisons: { label: string; detail: string; source: string }[];
     competitors: {
       channelTitle: string;
       subscriberCount: number;
@@ -76,7 +76,9 @@ export default function AnalyticsPage() {
         r.ok ? r.json() : null
       ),
       hasAi
-        ? fetch("/api/ai/analytics", { cache: "no-store" }).then((r) => r.json())
+        ? fetch(`/api/ai/analytics?days=${range}`, { cache: "no-store" }).then((r) =>
+            r.json()
+          )
         : Promise.resolve(null),
     ])
       .then(([overviewJson, aiJson]) => {
@@ -128,6 +130,8 @@ export default function AnalyticsPage() {
   const studio = overview.studio;
   const ctx = data?.ctx;
   const brief = data?.brief;
+  const comparisons =
+    brief?.comparisons?.length ? brief.comparisons : ctx?.comparisons ?? [];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -145,27 +149,22 @@ export default function AnalyticsPage() {
           <StudioAnalyticsPanel studio={studio} tab={studioTab} />
         </section>
       ) : (
-        <DataNotice
-          title="Studio metrics unavailable"
-          description="YouTube didn't return detailed analytics for this period. Try a longer date range or reconnect your channel in Settings."
-        />
+        <p className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          Detailed studio breakdowns couldn&apos;t load. Charts and facts below
+          still use your connected channel data.
+        </p>
       )}
 
       {!hasAi ? (
         <PremiumGate
           title="AI Analytics"
-          description="Data-driven comparisons and cited insights — no generic advice."
+          description="Data-driven comparisons from your channel — no generic advice."
           perks={[
             "Period-over-period comparisons with real numbers",
             "Auto-detected competitor benchmarks (public data)",
             "Traffic pattern analysis tied to your uploads",
             "Thin-data warnings when history is limited",
           ]}
-        />
-      ) : data?.error && !data.brief ? (
-        <DataNotice
-          title="AI analysis unavailable"
-          description={data.error}
         />
       ) : (
         <section className="space-y-6">
@@ -174,8 +173,11 @@ export default function AnalyticsPage() {
               <LineChart className="h-5 w-5 text-primary" /> AI analysis
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Topic focus: {ctx?.topic || "Not enough uploads to detect a topic yet"}
+              Topic focus: {ctx?.topic || "Upload more videos to detect your niche"}
             </p>
+            {data?.error && (
+              <p className="mt-3 text-sm text-muted-foreground">{data.error}</p>
+            )}
             {ctx?.thinData && (
               <p className="mt-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm leading-relaxed text-warning">
                 Limited analytics history ({ctx.dataDays} days) — insights may not
@@ -184,7 +186,7 @@ export default function AnalyticsPage() {
             )}
           </div>
 
-          {ctx?.facts?.length ? (
+          {ctx?.facts && ctx.facts.length > 0 && (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {ctx.facts.map((f) => (
                 <Card key={f.label} className="p-5">
@@ -194,20 +196,15 @@ export default function AnalyticsPage() {
                   <p className="mt-2 text-xl font-medium tabular-nums">{f.value}</p>
                   {f.delta && (
                     <div className="mt-2">
-                      <Delta value={parseFloat(f.delta)} />
+                      <Delta value={parseDeltaLabel(f.delta)} />
                     </div>
                   )}
                 </Card>
               ))}
             </div>
-          ) : (
-            <DataNotice
-              title="Not enough data for key facts"
-              description="We need more views and history before the AI can summarize period-over-period changes with confidence."
-            />
           )}
 
-          {brief ? (
+          {brief && (
             <Card className="p-6">
               <CardHeader
                 title="Analysis"
@@ -219,7 +216,10 @@ export default function AnalyticsPage() {
               />
               <h3 className="text-lg font-semibold leading-snug">{brief.headline}</h3>
               {brief.paragraphs.map((p) => (
-                <p key={p.slice(0, 40)} className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                <p
+                  key={p.slice(0, 40)}
+                  className="mt-3 text-sm leading-relaxed text-muted-foreground"
+                >
                   {p}
                 </p>
               ))}
@@ -227,18 +227,13 @@ export default function AnalyticsPage() {
                 <p className="mt-4 text-sm text-warning">{brief.thinDataWarning}</p>
               )}
             </Card>
-          ) : (
-            <DataNotice
-              title="Analysis not ready"
-              description="There isn't enough channel data yet to produce a written analysis. Check back after more uploads and views."
-            />
           )}
 
-          {brief?.comparisons?.length ? (
+          {comparisons.length > 0 && (
             <Card className="p-6">
               <CardHeader title="Comparisons" />
               <div className="space-y-3">
-                {brief.comparisons.map((c) => (
+                {comparisons.map((c) => (
                   <div
                     key={c.label}
                     className="rounded-lg border border-border px-4 py-3"
@@ -256,28 +251,9 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             </Card>
-          ) : hasAi && brief ? (
-            <DataNotice
-              title="No comparisons available"
-              description="There isn't enough overlapping data to compare against competitors or prior periods yet."
-            />
-          ) : null}
+          )}
 
-          {brief?.citations?.length ? (
-            <Card className="p-6">
-              <CardHeader title="Cited metrics" />
-              <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
-                {brief.citations.map((c) => (
-                  <li key={c} className="flex items-start gap-2">
-                    <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : null}
-
-          {ctx?.competitors?.length ? (
+          {ctx?.competitors && ctx.competitors.length > 0 && (
             <Card className="p-6">
               <CardHeader title="Competitor benchmarks" />
               <div className="flex flex-wrap gap-3">
@@ -288,34 +264,31 @@ export default function AnalyticsPage() {
                   >
                     <p className="font-medium">{c.channelTitle}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatCompact(c.subscriberCount)} subs · Public data
+                      {formatCompact(c.subscriberCount)} subs
                     </p>
                   </div>
                 ))}
               </div>
             </Card>
-          ) : hasAi ? (
-            <DataNotice
-              title="No competitor benchmarks"
-              description="We couldn't find enough similar channels in public data to benchmark against your niche yet."
-            />
-          ) : null}
+          )}
 
-          {ctx?.dominantPattern ? (
+          {ctx?.dominantPattern && ctx.dominantPattern !== "unknown" && (
             <Card className="p-5">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Top video traffic pattern
               </p>
               <p className="mt-2 font-semibold">{ctx.dominantPattern}</p>
             </Card>
-          ) : hasAi ? (
-            <DataNotice
-              title="Traffic pattern unknown"
-              description="Upload more videos with measurable views before we can identify a dominant traffic source."
-            />
-          ) : null}
+          )}
         </section>
       )}
     </div>
   );
+}
+
+function parseDeltaLabel(s: string): number {
+  const neg = s.trim().startsWith("-");
+  const n = parseFloat(s.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(n)) return 0;
+  return neg ? -n : n;
 }

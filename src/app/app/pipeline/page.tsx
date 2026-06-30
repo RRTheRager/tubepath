@@ -84,6 +84,11 @@ export default function PipelinePage() {
             uploads and analytics data.
           </p>
         )}
+        {pipeline.competitorError && (
+          <p className="mt-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            {pipeline.competitorError}
+          </p>
+        )}
       </div>
 
       <Card>

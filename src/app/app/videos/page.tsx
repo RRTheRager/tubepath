@@ -98,7 +98,7 @@ export default function VideosPage() {
           <Link
             key={v.id}
             href={`/app/videos/${v.id}`}
-            className="mac-card group flex items-center gap-4 p-3 transition-all hover:shadow-mac"
+            className="app-card group flex items-center gap-4 p-3 transition-all hover:shadow-app"
           >
             <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-md bg-muted sm:w-40">
               {/* eslint-disable-next-line @next/next/no-img-element */}

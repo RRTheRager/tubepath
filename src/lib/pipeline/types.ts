@@ -57,4 +57,6 @@ export interface PipelinePayload {
   competitors: CompetitorChannel[];
   advice: PipelineAdvice;
   generatedAt: string;
+  /** Set when auto-discovery fails or returns no channels. */
+  competitorError?: string;
 }

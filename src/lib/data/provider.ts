@@ -10,6 +10,8 @@ import { YouTubeProvider } from "./youtube";
 
 export interface OverviewOptions {
   historyDays: number;
+  /** Window for snapshot + engagement split (defaults to 28). */
+  windowDays?: number;
 }
 
 export interface DataProvider {

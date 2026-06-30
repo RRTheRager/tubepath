@@ -17,7 +17,7 @@ export function PremiumGate({
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="mac-card max-w-md text-center">
+      <div className="app-card max-w-md text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-white">
           <Lock className="h-6 w-6" />
         </div>

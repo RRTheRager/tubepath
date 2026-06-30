@@ -6,7 +6,7 @@ export function Card({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("mac-card p-6", className)} {...props}>
+    <div className={cn("app-card p-6", className)} {...props}>
       {children}
     </div>
   );

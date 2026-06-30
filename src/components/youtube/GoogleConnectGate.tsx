@@ -32,7 +32,7 @@ export function GoogleConnectGate({ children }: { children: React.ReactNode }) {
         <div className="absolute left-1/2 top-[10%] h-72 w-96 -translate-x-1/2 rounded-full bg-primary/15 blur-[100px]" />
       </div>
 
-      <div className="mac-card w-full max-w-lg text-center shadow-mac-lg">
+      <div className="app-card w-full max-w-lg text-center shadow-app-lg">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FF0000]/15 text-[#FF0000]">
           <Youtube className="h-8 w-8" />
         </div>

@@ -8,9 +8,11 @@ import type {
   VideoSummary,
 } from "@/lib/types";
 import {
+  computeEngagementRate,
   computePulse,
   computeSnapshot,
-  detectAnomalies,
+  SHORTS_MAX_SECONDS,
+  type EngagementSplit,
 } from "@/lib/metrics";
 import type { DataProvider, OverviewOptions } from "./provider";
 import { YouTubeDataError } from "./provider";
@@ -192,12 +194,44 @@ export class YouTubeProvider implements DataProvider {
         videoCount: num(ch?.statistics?.videoCount),
       };
 
-      const snapshot = computeSnapshot(metrics);
-      const anomalies = detectAnomalies(metrics);
-      const pulse = computePulse(metrics, this.account.streak);
-      const insights = cannedInsights(snapshot, anomalies);
+      const windowDays = Math.min(
+        Math.max(opts.windowDays ?? 28, 7),
+        metrics.length
+      );
+      const windowStart = isoDaysAgo(windowDays);
+      const priorStart = isoDaysAgo(windowDays * 2);
 
-      return { channel, snapshot, metrics, anomalies, pulse, insights };
+      let split: EngagementSplit | undefined;
+      let priorSplit: EngagementSplit | undefined;
+      try {
+        split = await fetchEngagementSplit(
+          token,
+          ids,
+          windowStart,
+          endDate
+        );
+        if (metrics.length >= windowDays * 2) {
+          priorSplit = await fetchEngagementSplit(
+            token,
+            ids,
+            priorStart,
+            windowStart
+          );
+        }
+      } catch {
+        /* optional split */
+      }
+
+      const snapshot = computeSnapshot(
+        metrics,
+        windowDays,
+        split,
+        priorSplit
+      );
+      const pulse = computePulse(metrics, this.account.streak);
+      const insights = cannedInsights(snapshot, []);
+
+      return { channel, snapshot, metrics, anomalies: [], pulse, insights };
     } catch (err) {
       if (err instanceof YouTubeDataError) throw err;
       throw new YouTubeDataError();
@@ -318,6 +352,7 @@ export class YouTubeProvider implements DataProvider {
     const views = num(v.statistics?.viewCount);
     const likes = num(v.statistics?.likeCount);
     const comments = num(v.statistics?.commentCount);
+    const durationSeconds = parseDuration(v.contentDetails?.duration ?? "");
     return {
       id: v.id,
       title: v.snippet?.title ?? "Untitled",
@@ -326,16 +361,85 @@ export class YouTubeProvider implements DataProvider {
         v.snippet?.thumbnails?.high?.url ??
         "",
       publishedAt: v.snippet?.publishedAt ?? new Date().toISOString(),
-      durationSeconds: parseDuration(v.contentDetails?.duration ?? ""),
+      durationSeconds,
+      isShort: durationSeconds > 0 && durationSeconds <= SHORTS_MAX_SECONDS,
       views,
       likes,
       comments,
       watchTimeHours: 0,
       avgViewDurationSeconds: 0,
       ctr: 0,
-      engagementRate:
-        views > 0 ? Number((((likes + comments) / views) * 100).toFixed(2)) : 0,
+      engagementRate: computeEngagementRate(likes, comments, views),
       retentionPct: 0,
     };
   }
+}
+
+async function fetchEngagementSplit(
+  token: string,
+  ids: string,
+  startDate: string,
+  endDate: string
+): Promise<EngagementSplit> {
+  const empty: EngagementSplit = {
+    long: { views: 0, likes: 0, comments: 0 },
+    shorts: { views: 0, likes: 0, comments: 0 },
+  };
+
+  const report = await analyticsReport(token, {
+    ids,
+    startDate,
+    endDate,
+    metrics: "views,likes,comments",
+    dimensions: "video",
+    sort: "-views",
+    maxResults: "200",
+  });
+
+  const rows = report.rows ?? [];
+  if (!rows.length) return empty;
+
+  const vi = colIndex(report, "video");
+  const vvi = colIndex(report, "views");
+  const li = colIndex(report, "likes");
+  const ci = colIndex(report, "comments");
+
+  const videoIds = rows
+    .map((r) => String(r[vi]))
+    .filter((id) => id && id !== "undefined");
+
+  const durationById = new Map<string, number>();
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const batch = videoIds.slice(i, i + 50);
+    const vids = await dataApi<VideoListResponse>(token, "videos", {
+      part: "contentDetails",
+      id: batch.join(","),
+    });
+    for (const v of vids.items ?? []) {
+      durationById.set(
+        v.id,
+        parseDuration(v.contentDetails?.duration ?? "")
+      );
+    }
+  }
+
+  const split: EngagementSplit = {
+    long: { views: 0, likes: 0, comments: 0 },
+    shorts: { views: 0, likes: 0, comments: 0 },
+  };
+
+  for (const row of rows) {
+    const id = String(row[vi]);
+    const views = num(row[vvi]);
+    const likes = num(row[li]);
+    const comments = num(row[ci]);
+    const dur = durationById.get(id) ?? 0;
+    const bucket =
+      dur > 0 && dur <= SHORTS_MAX_SECONDS ? split.shorts : split.long;
+    bucket.views += views;
+    bucket.likes += likes;
+    bucket.comments += comments;
+  }
+
+  return split;
 }

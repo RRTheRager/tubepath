@@ -126,7 +126,16 @@ export interface MetricSnapshot {
   comments: number;
   watchTimeHours: number;
   ctr: number;
+  /** Pooled (likes + comments) / views for the window. */
   engagementRate: number;
+  /** Long-form videos (>60s): pooled engagement rate. */
+  engagementRateLong: number;
+  /** Shorts (≤60s): pooled engagement rate. */
+  engagementRateShorts: number;
+  /** Period change for long-form engagement rate (%). */
+  engagementLongChange?: number;
+  /** Period change for Shorts engagement rate (%). */
+  engagementShortsChange?: number;
   /** Percent change vs previous comparable period. */
   periodChange: Partial<Record<MetricKey, number>>;
 }
@@ -147,6 +156,8 @@ export interface VideoSummary {
   thumbnailUrl: string;
   publishedAt: string;
   durationSeconds: number;
+  /** True when duration is 1–60 seconds (YouTube Short). */
+  isShort: boolean;
   views: number;
   likes: number;
   comments: number;
@@ -203,9 +214,17 @@ export interface StudioRevenue {
   rpm: number;
 }
 
+export type BreakdownFetchStatus = "ok" | "empty" | "error";
+
 export interface StudioAnalytics {
   periodDays: number;
   monetized: boolean;
+  breakdownStatus?: {
+    traffic: BreakdownFetchStatus;
+    devices: BreakdownFetchStatus;
+    countries: BreakdownFetchStatus;
+    revenue: BreakdownFetchStatus;
+  };
   totals: {
     views: number;
     impressions: number;

@@ -23,7 +23,7 @@ export function FeedCard({ card, index }: { card: InsightCard; index: number }) 
         delay: Math.min(index * 0.05, 0.3),
         ease: [0.16, 1, 0.3, 1],
       }}
-      className="mac-card relative overflow-hidden p-5 sm:p-6"
+      className="app-card relative overflow-hidden p-5 sm:p-6"
     >
       <div
         className={cn(

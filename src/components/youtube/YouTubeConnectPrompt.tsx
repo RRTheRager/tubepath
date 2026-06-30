@@ -14,7 +14,7 @@ export function YouTubeConnectPrompt({
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4">
-      <div className="mac-card max-w-md text-center">
+      <div className="app-card max-w-md text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FF0000]/15 text-[#FF0000]">
           <Youtube className="h-7 w-7" />
         </div>

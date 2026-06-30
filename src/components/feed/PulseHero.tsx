@@ -30,7 +30,7 @@ export function PulseHero({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="mac-card relative overflow-hidden p-5 sm:p-6"
+      className="app-card relative overflow-hidden p-5 sm:p-6"
     >
       <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
       <div className="flex items-center gap-4">
@@ -53,8 +53,12 @@ export function PulseHero({
       </div>
 
       <div className="mt-5 grid grid-cols-3 gap-4 border-t border-border pt-5">
-        <PulseStat label="Views today" value={pulse.viewsDelta} />
-        <PulseStat label="Engagement" value={pulse.engagementDelta} />
+        <PulseStat label="Views change" value={pulse.viewsDelta} suffix="%" />
+        <PulseStat
+          label="Engagement change"
+          value={pulse.engagementDelta}
+          suffix=" pp"
+        />
         <div>
           <p className="text-xs text-muted-foreground">New subs</p>
           <p className="mt-0.5 text-sm font-bold tabular-nums">
@@ -71,12 +75,20 @@ export function PulseHero({
   );
 }
 
-function PulseStat({ label, value }: { label: string; value: number }) {
+function PulseStat({
+  label,
+  value,
+  suffix = "%",
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+}) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <div className="mt-0.5">
-        <Delta value={value} />
+        <Delta value={value} suffix={suffix} />
       </div>
     </div>
   );

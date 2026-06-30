@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, RefreshCw, Sparkles, Youtube } from "lucide-react";
+import { Check, ExternalLink, Youtube } from "lucide-react";
 import type { SubscriptionStatus } from "@/lib/types";
 import { useSession } from "@/components/providers/SessionProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -29,50 +29,24 @@ const STATUS_LABEL: Record<SubscriptionStatus, string> = {
   canceled: "Canceled",
 };
 
-interface AiModelResult {
-  model: string;
-  ok: boolean;
-  status?: number;
-  sample?: string;
-  detail?: string;
-  retryAfter?: string;
-}
-
-interface AiHealth {
-  ok: boolean;
-  key?: { format?: string; last4?: string };
-  reason?: string;
-  error?: string;
-  models?: AiModelResult[];
-}
-
 export default function SettingsPage() {
   const { data, loading, refresh } = useSession();
   const router = useRouter();
   const { mode, setMode } = useTheme();
   const [busy, setBusy] = useState(false);
-  const [ai, setAi] = useState<AiHealth | null>(null);
-  const [aiChecking, setAiChecking] = useState(true);
-
-  const checkAi = useCallback(async () => {
-    setAiChecking(true);
-    try {
-      const res = await fetch("/api/ai/health");
-      setAi(await res.json());
-    } catch {
-      setAi({ ok: false, error: "Could not reach health endpoint" });
-    } finally {
-      setAiChecking(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkAi();
-  }, [checkAi]);
 
   if (loading || !data) return <Loading />;
 
   const { account, capabilities, trialDaysLeft, stripeConfigured, youtubeConfigured } = data;
+
+  const activeGoogle = data.googleAccounts?.find(
+    (g) => g.id === data.activeGoogleAccountId
+  );
+  const googleEmail =
+    activeGoogle?.email ??
+    data.googleAccounts?.[0]?.email ??
+    account.email ??
+    null;
 
   const post = async (url: string, body?: unknown) => {
     setBusy(true);
@@ -108,7 +82,7 @@ export default function SettingsPage() {
           <div>
             <p className="font-medium">{account.name}</p>
             <p className="text-sm text-muted-foreground">
-              {account.email ?? "Not signed in with Google"}
+              {googleEmail ?? "Not signed in with Google"}
             </p>
           </div>
         </div>
@@ -218,85 +192,6 @@ export default function SettingsPage() {
             real channel connection.
           </p>
         )}
-      </Card>
-
-      {/* AI status */}
-      <Card>
-        <CardHeader
-          title="AI engine"
-          subtitle="Powers insights, the Studio, and the AI Coach (Google Gemini)."
-          action={
-            <Badge
-              tone={
-                aiChecking ? "neutral" : ai?.ok ? "success" : "warning"
-              }
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              {aiChecking
-                ? "Checking..."
-                : ai?.ok
-                  ? "Live AI"
-                  : "Fallback mode"}
-            </Badge>
-          }
-        />
-        {!aiChecking &&
-          (() => {
-            const live = ai?.models?.find((m) => m.ok);
-            const quota = ai?.models?.find((m) => m.status === 429);
-            return (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                {ai?.ok && live ? (
-                  <p>
-                    Live Gemini responses are active via{" "}
-                    <code>{live.model}</code>
-                    {ai.key?.format ? ` (${ai.key.format} key)` : ""}. Test
-                    reply: <code>{live.sample}</code>
-                  </p>
-                ) : ai?.reason ? (
-                  <p>{ai.reason}</p>
-                ) : ai?.error ? (
-                  <p>{ai.error}</p>
-                ) : quota ? (
-                  <p>
-                    Quota reached on all configured models &mdash; using canned
-                    content for now.
-                    {quota.retryAfter
-                      ? ` Google says retry in ~${quota.retryAfter}.`
-                      : " Free-tier daily caps reset at midnight Pacific."}{" "}
-                    Or enable billing for higher limits.
-                  </p>
-                ) : (
-                  <p>Falling back to canned content.</p>
-                )}
-                {ai?.models?.map((m) => (
-                  <p key={m.model} className="text-xs">
-                    <span className="font-medium">{m.model}</span>:{" "}
-                    {m.ok
-                      ? "ok"
-                      : `${m.status ?? "error"}${
-                          m.retryAfter ? ` (retry ${m.retryAfter})` : ""
-                        }`}
-                  </p>
-                ))}
-                {ai?.key?.last4 && (
-                  <p className="text-xs">
-                    Key loaded: ...{ai.key.last4}
-                  </p>
-                )}
-              </div>
-            );
-          })()}
-        <div className="mt-4">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={checkAi}
-            disabled={aiChecking}
-          >
-            <RefreshCw className="h-4 w-4" /> Re-check
-          </Button>
-        </div>
       </Card>
 
       {/* Appearance */}

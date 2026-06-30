@@ -162,6 +162,7 @@ function generateVideos(): VideoDetail[] {
       thumbnailUrl: thumb(idx + 1),
       publishedAt,
       durationSeconds,
+      isShort: durationSeconds > 0 && durationSeconds <= 60,
       views,
       likes,
       comments,
@@ -255,6 +256,7 @@ function toSummary(v: VideoDetail): VideoSummary {
     thumbnailUrl: v.thumbnailUrl,
     publishedAt: v.publishedAt,
     durationSeconds: v.durationSeconds,
+    isShort: v.isShort,
     views: v.views,
     likes: v.likes,
     comments: v.comments,
@@ -271,9 +273,10 @@ export class MockProvider implements DataProvider {
 
   async getOverview(opts: OverviewOptions): Promise<OverviewPayload> {
     const days = Math.min(Math.max(opts.historyDays, 7), 730);
+    const windowDays = opts.windowDays ?? 28;
     const metrics = generateMetrics(days);
-    const snapshot = computeSnapshot(metrics);
-    const anomalies = detectAnomalies(metrics);
+    const snapshot = computeSnapshot(metrics, windowDays);
+    const anomalies = detectAnomalies(metrics, { windowDays });
 
     // Attach plausible video titles to anomalies for richer UX.
     for (const a of anomalies) {
