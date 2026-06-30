@@ -1,0 +1,89 @@
+name: Repo audit
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: repo-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+        env:
+          # Build must succeed without secrets in CI
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Static bug audit
+        id: audit
+        run: |
+          node scripts/audit-repo.mjs --json > audit.json
+          node scripts/audit-repo.mjs --write-report docs/BUG-AUDIT-LATEST.md || true
+          cat audit.json | node -e "
+            const s = JSON.parse(require('fs').readFileSync(0,'utf8'));
+            const c = s.bySeverity.critical ?? 0;
+            const h = s.bySeverity.high ?? 0;
+            console.log('critical=' + c);
+            console.log('high=' + h);
+            console.log('total=' + s.total);
+          " >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bug-audit-report
+          path: |
+            audit.json
+            docs/BUG-AUDIT-LATEST.md
+          retention-days: 90
+
+      - name: Summarize findings
+        if: always()
+        run: |
+          echo "## Bug audit summary" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f audit.json ]; then
+            node -e "
+              const s = require('./audit.json');
+              console.log('| Severity | Count |');
+              console.log('| --- | ---: |');
+              for (const k of ['critical','high','medium','low']) {
+                console.log('| ' + k + ' | ' + (s.bySeverity[k]??0) + ' |');
+              }
+              console.log('');
+              console.log('Full report artifact: **bug-audit-report**');
+            " >> "$GITHUB_STEP_SUMMARY"
+          fi
+          node scripts/audit-repo.mjs || true
+
+      - name: Fail on critical/high static findings
+        if: steps.audit.outcome == 'failure'
+        run: |
+          echo "::error::Static audit found critical or high severity issues. See artifact bug-audit-report."
+          exit 1
