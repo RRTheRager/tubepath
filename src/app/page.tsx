@@ -1,10 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
-  ArrowRight,
   BarChart3,
   Bot,
   Check,
-  Flame,
   Sparkles,
   Wand2,
 } from "lucide-react";
@@ -12,11 +11,15 @@ import { getCurrentAccount } from "@/lib/session";
 import { capabilitiesFor } from "@/lib/access";
 import { PREMIUM_PRICE_LABEL } from "@/lib/env";
 import { StartTrialButton } from "@/components/marketing/StartTrialButton";
+import { TubePathLogo } from "@/components/ui/TubePathLogo";
 
 export default async function LandingPage() {
   const account = await getCurrentAccount();
   const caps = capabilitiesFor(account.status);
-  const hasAccess = caps.canEnterApp;
+
+  if (caps.canEnterApp) {
+    redirect("/app/dashboard");
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -26,27 +29,13 @@ export default async function LandingPage() {
       </div>
 
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-white">
-            <Flame className="h-4 w-4" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight">TubePath</span>
-        </div>
-        {hasAccess ? (
-          <Link
-            href="/app"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
-            Open app <ArrowRight className="h-4 w-4" />
-          </Link>
-        ) : (
-          <Link
-            href="#pricing"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            Pricing
-          </Link>
-        )}
+        <TubePathLogo size={32} showWordmark className="text-lg" />
+        <Link
+          href="#pricing"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          Pricing
+        </Link>
       </header>
 
       <main className="mx-auto max-w-6xl px-6">
@@ -70,16 +59,7 @@ export default async function LandingPage() {
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3">
-            {hasAccess ? (
-              <Link
-                href="/app"
-                className="inline-flex h-12 items-center gap-2 rounded-lg bg-primary px-6 text-base font-medium text-primary-foreground"
-              >
-                Open TubePath <ArrowRight className="h-4 w-4" />
-              </Link>
-            ) : (
-              <StartTrialButton />
-            )}
+            <StartTrialButton />
             <p className="text-xs text-muted-foreground">
               Card required &middot; No charge for 3 days &middot; Cancel anytime
             </p>
@@ -185,16 +165,7 @@ export default async function LandingPage() {
               </ul>
 
               <div className="mt-6">
-                {hasAccess ? (
-                  <Link
-                    href="/app"
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-base font-medium text-primary-foreground"
-                  >
-                    Open TubePath <ArrowRight className="h-4 w-4" />
-                  </Link>
-                ) : (
-                  <StartTrialButton className="w-full" />
-                )}
+                <StartTrialButton className="w-full" />
               </div>
               <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                 <Wand2 className="h-3.5 w-3.5" />

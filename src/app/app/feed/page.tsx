@@ -9,6 +9,7 @@ import { useActivatePremium } from "@/components/access/useActivatePremium";
 import { PulseHero } from "@/components/feed/PulseHero";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { Loading } from "@/components/ui/Loading";
+import { AiSummaryLoading } from "@/components/ui/AiSummaryLoading";
 import { Button } from "@/components/ui/Button";
 import { DataNotice } from "@/components/ui/DataNotice";
 import { YouTubeConnectPrompt } from "@/components/youtube/YouTubeConnectPrompt";
@@ -21,6 +22,7 @@ export default function FeedPage() {
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
   const [aiInsights, setAiInsights] = useState<InsightCard[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -46,16 +48,25 @@ export default function FeedPage() {
   }, [hasChannel, load]);
 
   useEffect(() => {
-    if (isFull && hasChannel) {
-      fetch("/api/ai/insights", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((j) => {
-          if (!j) return;
-          setAiInsights(j.insights ?? []);
-          setAiError(j.error ?? null);
-        })
-        .catch(() => setAiError(AI_SUPPORT_MESSAGE));
+    if (!isFull || !hasChannel) {
+      setAiInsights(null);
+      setAiError(null);
+      setAiLoading(false);
+      return;
     }
+
+    setAiLoading(true);
+    setAiInsights(null);
+    setAiError(null);
+    fetch("/api/ai/insights", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!j) return;
+        setAiInsights(j.insights ?? []);
+        setAiError(j.error ?? null);
+      })
+      .catch(() => setAiError(AI_SUPPORT_MESSAGE))
+      .finally(() => setAiLoading(false));
   }, [isFull, hasChannel]);
 
   const handleRefresh = async () => {
@@ -83,20 +94,22 @@ export default function FeedPage() {
   }
 
   const cards =
-    isFull && aiInsights?.length
-      ? aiInsights
-      : aiError && isFull
-        ? [
-            {
-              id: "ai-error",
-              tone: "neutral" as const,
-              emoji: "⚠️",
-              headline: "AI unavailable",
-              detail: aiError,
-              ai: false,
-            },
-          ]
-        : overview.insights;
+    isFull && aiLoading
+      ? null
+      : isFull && aiInsights?.length
+        ? aiInsights
+        : isFull && aiError
+          ? [
+              {
+                id: "ai-error",
+                tone: "neutral" as const,
+                emoji: "⚠️",
+                headline: "AI unavailable",
+                detail: aiError,
+                ai: false,
+              },
+            ]
+          : overview.insights;
 
   return (
     <div className="feed-scroll space-y-4 animate-fade-in">
@@ -114,7 +127,9 @@ export default function FeedPage() {
         refreshing={refreshing}
       />
 
-      {cards.length > 0 ? (
+      {isFull && aiLoading ? (
+        <AiSummaryLoading label="Generating your daily insights…" compact />
+      ) : cards && cards.length > 0 ? (
         cards.map((card, i) => <FeedCard key={card.id} card={card} index={i} />)
       ) : (
         <DataNotice

@@ -25,13 +25,16 @@ function ThumbnailImg({
   return (
     <div
       className="shrink-0 overflow-hidden rounded-md bg-white/10"
-      style={{ width, height }}
+      style={{
+        width: `min(100%, ${width}px)`,
+        aspectRatio: `${width} / ${height}`,
+      }}
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full items-center justify-center px-1 text-center text-[10px] text-white/40">
+        <div className="flex h-full min-h-[40px] items-center justify-center px-1 text-center text-[10px] text-white/40">
           Upload
         </div>
       )}
@@ -45,21 +48,35 @@ function PreviewFrame({
   imageUrl,
   layout,
   frame,
+  wide = false,
 }: {
   label: string;
   sizeLabel: string;
   imageUrl: string | null;
   layout: Layout;
   frame: { width: number; height: number };
+  wide?: boolean;
 }) {
+  const mockupWidth = layout === "list" ? frame.width + 120 : frame.width;
+
   if (layout === "home") {
     return (
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div
+        className={`min-w-0 rounded-xl border border-border bg-card p-4 ${
+          wide ? "sm:col-span-2" : ""
+        }`}
+      >
         <p className="mb-1 text-sm font-medium">{label}</p>
         <p className="mb-3 text-xs text-muted-foreground">{sizeLabel}</p>
-        <div className="inline-block rounded-lg bg-[#0f0f0f] p-2">
+        <div
+          className="w-full max-w-full rounded-lg bg-[#0f0f0f] p-2"
+          style={{ maxWidth: mockupWidth + 16 }}
+        >
           <ThumbnailImg url={imageUrl} width={frame.width} height={frame.height} />
-          <div className="mt-2 w-full space-y-1.5" style={{ width: frame.width }}>
+          <div
+            className="mt-2 space-y-1.5"
+            style={{ width: `min(100%, ${frame.width}px)` }}
+          >
             <div className="h-2 w-3/4 rounded bg-white/20" />
             <div className="h-1.5 w-1/2 rounded bg-white/10" />
           </div>
@@ -70,10 +87,13 @@ function PreviewFrame({
 
   if (layout === "shorts") {
     return (
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="min-w-0 rounded-xl border border-border bg-card p-4">
         <p className="mb-1 text-sm font-medium">{label}</p>
         <p className="mb-3 text-xs text-muted-foreground">{sizeLabel}</p>
-        <div className="inline-block rounded-lg bg-[#0f0f0f] p-2">
+        <div
+          className="inline-flex max-w-full rounded-lg bg-[#0f0f0f] p-2"
+          style={{ maxWidth: frame.width + 16 }}
+        >
           <ThumbnailImg url={imageUrl} width={frame.width} height={frame.height} />
         </div>
       </div>
@@ -81,13 +101,10 @@ function PreviewFrame({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4">
       <p className="mb-1 text-sm font-medium">{label}</p>
       <p className="mb-3 text-xs text-muted-foreground">{sizeLabel}</p>
-      <div
-        className="flex gap-2 rounded-lg bg-[#0f0f0f] p-2"
-        style={{ maxWidth: frame.width + 140 }}
-      >
+      <div className="flex w-full max-w-full gap-2 rounded-lg bg-[#0f0f0f] p-2">
         <ThumbnailImg url={imageUrl} width={frame.width} height={frame.height} />
         <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
           <div className="h-2 w-full rounded bg-white/20" />
@@ -193,7 +210,7 @@ export default function ThumbnailsPage() {
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
           <Smartphone className="h-4 w-4" /> Mobile
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <PreviewFrame
             label="Home feed"
             sizeLabel={`${PREVIEW_FRAMES.homeMobile.width}×${PREVIEW_FRAMES.homeMobile.height}px`}
@@ -229,13 +246,14 @@ export default function ThumbnailsPage() {
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
           <Monitor className="h-4 w-4" /> Desktop
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <PreviewFrame
             label="Home feed"
             sizeLabel={`${PREVIEW_FRAMES.homeDesktop.width}×${PREVIEW_FRAMES.homeDesktop.height}px`}
             imageUrl={imageUrl}
             layout="home"
             frame={PREVIEW_FRAMES.homeDesktop}
+            wide
           />
           <PreviewFrame
             label="Search"

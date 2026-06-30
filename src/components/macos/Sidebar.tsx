@@ -7,6 +7,7 @@ import { NAV } from "./nav";
 import { useSession } from "@/components/providers/SessionProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { YouTubeAccountPanel } from "@/components/youtube/YouTubeAccountPanel";
+import { TubePathLogo } from "@/components/ui/TubePathLogo";
 import { cn } from "@/lib/utils";
 
 export function Sidebar({
@@ -32,11 +33,8 @@ export function Sidebar({
         className
       )}
     >
-      <div className="flex h-12 items-center gap-2 px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-          T
-        </div>
-        <span className="text-sm font-semibold tracking-tight">TubePath</span>
+      <div className="flex h-12 items-center px-4">
+        <TubePathLogo href="/app/feed" size={32} showWordmark />
       </div>
 
       <button

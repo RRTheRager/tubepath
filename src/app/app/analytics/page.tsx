@@ -10,9 +10,9 @@ import { useYouTubeLinked } from "@/components/youtube/useYouTubeLinked";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Loading } from "@/components/ui/Loading";
+import { AiSummaryLoading } from "@/components/ui/AiSummaryLoading";
 import { Delta } from "@/components/ui/Delta";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { DataNotice } from "@/components/ui/DataNotice";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { StudioAnalyticsPanel } from "@/components/analytics/StudioAnalyticsPanel";
 import { StudioTabBar, type StudioTab } from "@/components/analytics/StudioTabBar";
@@ -59,46 +59,51 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [range, setRange] = useState<Range>("28");
   const [studioTab, setStudioTab] = useState<StudioTab>("overview");
-  const [loading, setLoading] = useState(true);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const caps = session?.capabilities;
   const hasAi = caps?.ai ?? false;
 
   useEffect(() => {
     if (!hasChannel) {
-      setLoading(false);
+      setOverviewLoading(false);
       return;
     }
 
-    setLoading(true);
-    Promise.all([
-      fetch(`/api/overview?days=${range}`, { cache: "no-store" }).then((r) =>
-        r.ok ? r.json() : null
-      ),
-      hasAi
-        ? fetch(`/api/ai/analytics?days=${range}`, { cache: "no-store" }).then((r) =>
-            r.json()
-          )
-        : Promise.resolve(null),
-    ])
-      .then(([overviewJson, aiJson]) => {
+    setOverviewLoading(true);
+    fetch(`/api/overview?days=${range}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((overviewJson) => {
         if (overviewJson?.youtubeConnected && overviewJson.overview) {
           setOverview(overviewJson.overview);
         } else {
           setOverview(null);
         }
-        if (aiJson) setData(aiJson);
       })
-      .catch(() => {
-        setOverview(null);
-        if (hasAi) {
-          setData({
-            error:
-              "This isn't working right now. Please try again or contact support.",
-          });
-        }
-      })
-      .finally(() => setLoading(false));
+      .catch(() => setOverview(null))
+      .finally(() => setOverviewLoading(false));
+  }, [hasChannel, range]);
+
+  useEffect(() => {
+    if (!hasChannel || !hasAi) {
+      setData(null);
+      setAiLoading(false);
+      return;
+    }
+
+    setAiLoading(true);
+    setData(null);
+    fetch(`/api/ai/analytics?days=${range}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((aiJson) => setData(aiJson))
+      .catch(() =>
+        setData({
+          error:
+            "This isn't working right now. Please try again or contact support.",
+        })
+      )
+      .finally(() => setAiLoading(false));
   }, [hasChannel, range, hasAi]);
 
   const rangeOptions = useMemo(() => {
@@ -116,7 +121,7 @@ export default function AnalyticsPage() {
     return <YouTubeConnectPrompt variant="select-channel" />;
   }
 
-  if (loading || !caps) return <Loading label="Loading analytics" />;
+  if (overviewLoading || !caps) return <Loading label="Loading analytics" />;
 
   if (!overview) {
     return (
@@ -173,20 +178,28 @@ export default function AnalyticsPage() {
               <LineChart className="h-5 w-5 text-primary" /> AI analysis
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Topic focus: {ctx?.topic || "Upload more videos to detect your niche"}
+              Topic focus:{" "}
+              {aiLoading
+                ? "Detecting from your uploads…"
+                : ctx?.topic || "Upload more videos to detect your niche"}
             </p>
-            {data?.error && (
-              <p className="mt-3 text-sm text-muted-foreground">{data.error}</p>
-            )}
-            {ctx?.thinData && (
-              <p className="mt-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm leading-relaxed text-warning">
-                Limited analytics history ({ctx.dataDays} days) — insights may not
-                be fully accurate yet.
-              </p>
-            )}
           </div>
 
-          {ctx?.facts && ctx.facts.length > 0 && (
+          {aiLoading ? (
+            <AiSummaryLoading label="Analyzing your channel data…" />
+          ) : (
+            <>
+              {data?.error && (
+                <p className="text-sm text-muted-foreground">{data.error}</p>
+              )}
+              {ctx?.thinData && (
+                <p className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm leading-relaxed text-warning">
+                  Limited analytics history ({ctx.dataDays} days) — insights may not
+                  be fully accurate yet.
+                </p>
+              )}
+
+              {ctx?.facts && ctx.facts.length > 0 && (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {ctx.facts.map((f) => (
                 <Card key={f.label} className="p-5">
@@ -279,6 +292,8 @@ export default function AnalyticsPage() {
               </p>
               <p className="mt-2 font-semibold">{ctx.dominantPattern}</p>
             </Card>
+          )}
+            </>
           )}
         </section>
       )}
