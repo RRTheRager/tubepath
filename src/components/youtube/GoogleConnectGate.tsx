@@ -35,7 +35,7 @@ export function GoogleConnectGate({ children }: { children: React.ReactNode }) {
 
       <div className="app-card w-full max-w-lg text-center shadow-app-lg">
         <div className="mx-auto mb-5 flex justify-center">
-          <TubePathLogo size={64} />
+          <TubePathLogo size={72} variant="icon" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight">
           Connect YouTube to get started

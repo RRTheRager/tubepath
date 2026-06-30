@@ -8,6 +8,7 @@ import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { TrialBanner } from "@/components/access/TrialBanner";
 import { GoogleConnectGate } from "@/components/youtube/GoogleConnectGate";
+import { TubePathLogo } from "@/components/ui/TubePathLogo";
 import { NAV } from "./nav";
 import { cn } from "@/lib/utils";
 
@@ -89,9 +90,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold tracking-tight">
-              {activeNav?.label ?? "TubePath"}
-            </p>
+            {activeNav ? (
+              <p className="truncate text-sm font-semibold tracking-tight">
+                {activeNav.label}
+              </p>
+            ) : (
+              <TubePathLogo size={28} variant="icon" />
+            )}
           </div>
           <Link
             href="/app/settings"

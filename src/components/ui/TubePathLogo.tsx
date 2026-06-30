@@ -2,36 +2,41 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+/** Trimmed full wordmark aspect (785×256). Regenerate via `npm run generate-logos`. */
+const FULL_LOGO_ASPECT = 785 / 256;
+
 export function TubePathLogo({
   size = 32,
-  showWordmark = false,
+  variant = "icon",
   href,
   className,
 }: {
   size?: number;
-  showWordmark?: boolean;
+  /** Icon-only for compact UI; full wordmark for marketing headers. */
+  variant?: "icon" | "full";
   href?: string;
   className?: string;
 }) {
-  const content = showWordmark ? (
-    <Image
-      src="/logo-full.png"
-      alt="TubePath"
-      width={size}
-      height={size}
-      className="shrink-0"
-      style={{ height: size, width: "auto" }}
-      priority
-    />
-  ) : (
-    <Image
-      src="/logo-icon.jpg"
-      alt="TubePath"
-      width={size}
-      height={size}
-      className="shrink-0"
-      priority
-    />
+  const isFull = variant === "full";
+  const width = isFull ? Math.round(size * FULL_LOGO_ASPECT) : size;
+  const height = size;
+
+  const content = (
+    <span
+      className="relative block shrink-0"
+      style={{ width, height }}
+    >
+      <Image
+        src={isFull ? "/logo-full.png" : "/logo-icon.png"}
+        alt="TubePath"
+        fill
+        className={cn(
+          isFull ? "object-contain object-left" : "object-contain object-center"
+        )}
+        sizes={`${width}px`}
+        priority
+      />
+    </span>
   );
 
   const classes = cn("flex items-center", className);
