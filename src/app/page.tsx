@@ -29,7 +29,7 @@ export default async function LandingPage() {
       </div>
 
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <TubePathLogo size={32} showWordmark className="text-lg" />
+        <TubePathLogo size={40} showWordmark />
         <Link
           href="#pricing"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"

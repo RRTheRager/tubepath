@@ -11,7 +11,7 @@ import {
   YOUTUBE_UPLOAD,
 } from "@/lib/thumbnails/youtube-sizes";
 
-type Layout = "home" | "list" | "shorts";
+type Layout = "home" | "list";
 
 function ThumbnailImg({
   url,
@@ -80,21 +80,6 @@ function PreviewFrame({
             <div className="h-2 w-3/4 rounded bg-white/20" />
             <div className="h-1.5 w-1/2 rounded bg-white/10" />
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (layout === "shorts") {
-    return (
-      <div className="min-w-0 rounded-xl border border-border bg-card p-4">
-        <p className="mb-1 text-sm font-medium">{label}</p>
-        <p className="mb-3 text-xs text-muted-foreground">{sizeLabel}</p>
-        <div
-          className="inline-flex max-w-full rounded-lg bg-[#0f0f0f] p-2"
-          style={{ maxWidth: frame.width + 16 }}
-        >
-          <ThumbnailImg url={imageUrl} width={frame.width} height={frame.height} />
         </div>
       </div>
     );
@@ -232,13 +217,6 @@ export default function ThumbnailsPage() {
             layout="list"
             frame={PREVIEW_FRAMES.suggestedMobile}
           />
-          <PreviewFrame
-            label="Shorts shelf"
-            sizeLabel={`${PREVIEW_FRAMES.shortsMobile.width}×${PREVIEW_FRAMES.shortsMobile.height}px`}
-            imageUrl={imageUrl}
-            layout="shorts"
-            frame={PREVIEW_FRAMES.shortsMobile}
-          />
         </div>
       </section>
 
@@ -268,13 +246,6 @@ export default function ThumbnailsPage() {
             imageUrl={imageUrl}
             layout="list"
             frame={PREVIEW_FRAMES.suggestedDesktop}
-          />
-          <PreviewFrame
-            label="Shorts shelf"
-            sizeLabel={`${PREVIEW_FRAMES.shortsDesktop.width}×${PREVIEW_FRAMES.shortsDesktop.height}px`}
-            imageUrl={imageUrl}
-            layout="shorts"
-            frame={PREVIEW_FRAMES.shortsDesktop}
           />
         </div>
       </section>

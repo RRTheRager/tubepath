@@ -13,23 +13,28 @@ export function TubePathLogo({
   href?: string;
   className?: string;
 }) {
-  const content = (
-    <>
-      <Image
-        src="/icon.svg"
-        alt="TubePath"
-        width={size}
-        height={size}
-        className="shrink-0 rounded-lg"
-        priority
-      />
-      {showWordmark && (
-        <span className="text-sm font-semibold tracking-tight">TubePath</span>
-      )}
-    </>
+  const content = showWordmark ? (
+    <Image
+      src="/logo-full.png"
+      alt="TubePath"
+      width={size}
+      height={size}
+      className="shrink-0"
+      style={{ height: size, width: "auto" }}
+      priority
+    />
+  ) : (
+    <Image
+      src="/logo-icon.jpg"
+      alt="TubePath"
+      width={size}
+      height={size}
+      className="shrink-0"
+      priority
+    />
   );
 
-  const classes = cn("flex items-center gap-2", className);
+  const classes = cn("flex items-center", className);
 
   if (href) {
     return (

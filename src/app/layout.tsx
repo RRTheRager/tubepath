@@ -27,8 +27,11 @@ export const metadata: Metadata = {
     title: "TubePath",
   },
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/logo-icon.jpg", type: "image/jpeg" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", type: "image/png" }],
   },
   openGraph: {
     type: "website",

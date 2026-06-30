@@ -34,7 +34,7 @@ export function Sidebar({
       )}
     >
       <div className="flex h-12 items-center px-4">
-        <TubePathLogo href="/app/feed" size={32} showWordmark />
+        <TubePathLogo href="/app/feed" size={40} showWordmark />
       </div>
 
       <button
