@@ -20,7 +20,7 @@ export default async function LandingPage() {
   const hasAccess = caps.canEnterApp;
 
   return (
-    <div className="grain relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       {/* ambient gradient */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-[-10%] h-[480px] w-[680px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />

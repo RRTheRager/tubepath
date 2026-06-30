@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <GoogleConnectGate>
-      <div className="grain relative flex h-[100dvh] overflow-hidden bg-background">
+      <div className="relative flex h-[100dvh] overflow-hidden bg-background">
       <Sidebar
         onOpenPalette={() => setPaletteOpen(true)}
         className="relative hidden md:flex"
